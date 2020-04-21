@@ -1,0 +1,20 @@
+{
+  "name": "dotter-discord",
+  "version": "3.0.0",
+  "description": "Sana Rinomi's Discord Bot.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "FrameCord",
+    "Dicord",
+    "Bot"
+  ],
+  "author": "Amelia Rose Aldridge <amelia@sanarinomi.com>",
+  "license": "None",
+  "dependencies": {
+    "framecord": "^1.0.2",
+    "nekos.life": "^2.0.6"
+  }
+}
