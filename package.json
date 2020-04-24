@@ -14,7 +14,8 @@
   "author": "Amelia Rose Aldridge <amelia@sanarinomi.com>",
   "license": "None",
   "dependencies": {
-    "framecord": "^1.0.2",
+    "framecord": "^1.0.6",
+    "mustache": "^4.0.1",
     "nekos.life": "^2.0.6"
   }
 }

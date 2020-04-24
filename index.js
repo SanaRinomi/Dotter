@@ -41,7 +41,8 @@ function loadModules(startPath = "./commands") {
             if(file.endsWith(".js")){
                 delete require.cache[require.resolve(path.join(currPath, file))];
                 const moduleData = require(path.join(currPath, file));
-                DotterClient.registerNode(moduleData.node, moduleData.path);
+                if(typeof moduleData === "function")
+                    moduleData(DotterClient);
             }
             else {
                 paths.push(path.join(paths[i], file));
