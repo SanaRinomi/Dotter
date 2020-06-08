@@ -2,14 +2,16 @@ const {Client, Nodes: {DataNode, AliasNode}} = require("framecord"),
     Config = require("./config.json"),
     path = require("path"),
     presenceChange = require("./other/discordPresence"),
-    fs = require("fs");
+    fs = require("fs"),
+    {commands} = require("./controllers/dbMain"),
+    {Nodes} = require("./controllers/cache");
 
 const DotterClient = new Client(Config.discordToken, "dn", (cli) => {
     console.log(`Logged in as ${cli.discordCli.user.tag}`);
 });
 
 DotterClient.on("nodeNotInNSFW", (node, command, msg) => {
-    msg.reply(`You must use \`${command.commands[command.commands.length-1]}\` in a NSFW channel.`);
+    msg.reply(`You must use "${command.CurrentNode.Name}" \`${command.CurrentNode.ID}\` in a NSFW channel.`);
 });
 
 const UserBase = new DataNode("!", {
@@ -73,7 +75,40 @@ function loadModules(startPath = "./commands") {
     }
 }
 
+function registerNodes() {
+    let nodes = [{n: DotterClient.root, path: "", level: 0}];
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+
+        if(node.level > 1) commands.isCommandStored(node.path, node.n.ID).then(v => {
+            let executable = node.n.Type === "command";
+            let nodeData = {
+                name: node.n.Name,
+                description: node.n.Description,
+                tags: node.n.Tags,
+                aliases: node.n.Aliases,
+                nsfw: node.n.IsNSFW,
+                arguments: executable ? node.n.Arguments : [],
+                permissions: executable ? node.n.Permissions : [],
+                executable
+            };
+            if(Number.isInteger(v)) {
+                node.n.dbID = v;
+                commands.UpdateCommand(v, nodeData);
+            } else commands.addCommand(node.path, node.n.ID, nodeData).then(vv => {
+                if(Number.isInteger(vv)) node.n.dbID = vv;
+            }).catch(err => {console.log(err.message);});
+        });
+
+        if(node.n.HasChildren)
+            nodes.push(...node.n.Children.filter(v => v.Type !== "alias").map(v => {return {n:v, path: node.level > 2 ? `${node.path} ${node.n.ID}` : node.level ? node.path+node.n.ID : node.n.ID, level: node.level+1};}));
+    }
+
+    Nodes.push(...nodes);
+}
+
 loadModules();
+registerNodes();
 
 require("./controllers/discordEvents")(DotterClient.discordCli);
 
