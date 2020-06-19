@@ -6,47 +6,6 @@ const {Nodes: {CommandNode, AliasNode}, ListMessage, ConfirmationMessage} = requ
 const Mustache = require("mustache");
 const RoleAmount = 10;
 const MsgArr = new Map();
-    
-function roleFunc(guild, roles, index = 0, amount = 0, limit = 0) {
-    const data = {
-        guildName: guild.name,
-        haschildren: roles ? true : false,
-        children: () => {
-            if(!roles.success || !roles.roles.length) return;
-            let page = roles.roles.slice((index) * amount, (index+1) * amount);
-            let arr = page.map((v, i) => {return {...v, index: i+1};});
-
-            MsgArr.set(guild.id, arr);
-
-            return arr;
-        },
-        index: index+1,
-        limit: limit+1
-    };
-
-    const render = Mustache.render(
-`\`\`\`md
-# User Roles for {{{guildName}}}
-
-## 🧾 Roles ({{index}}/{{limit}}){{#children}}
-{{{index}}}) {{{name}}}{{/children}}
-\`\`\``
-        , data);    
-    
-    return render;
-}
-
-function setURole(obj, reaction, user, deleted, msg) {
-    const roleVal = MsgArr.get(msg.guild.id);
-    const roleIndex = roleVal ? roleVal[reactionArr.indexOf(reaction.emoji.name)] : undefined;
-    if(roleIndex && roleIndex !== -1) {
-        let b = msg.member.roles.cache.get(roleIndex.id) ? true : false;
-        if(b) msg.member.roles.remove(roleIndex.id).then(() => {obj.Message.channel.send(`Role \`${roleIndex.name}\` removed!`);}).catch(err => {obj.Message.channel.send(`Error attempting to remove role: \`${err.message}\``);});
-        else msg.member.roles.add(roleIndex.id).then(() => {obj.Message.channel.send(`Role \`${roleIndex.name}\` added!`);}).catch(err => {obj.Message.channel.send(`Error attempting to add role: \`${err.message}\``);});
-    } else {
-        obj.Message.edit("Selected value is invalid!");
-    }
-}
 
 const RemindMeNode = new CommandNode("remindme", async (cli, command, msg) => {
     if(timed.IsValidTime(command.Args[1].Value)) {
@@ -71,29 +30,17 @@ const RemindMeNode = new CommandNode("remindme", async (cli, command, msg) => {
 });
 
 const RemindMeListNode = new CommandNode("list", async (cli, command, msg) => {
-    if(command.Args[0] && command.Args[0].Value) {
-        const res = await timed.getAllUserValues(msg.author.id);
-        if(res.success) {
-            res.values.forEach(v => {
-                msg.channel.send(`Reminder ${v.id}: \`${v.extra.reminder}\` - ${moment(v.until).format("dddd, MMMM Do YYYY, h:mm:ss a")}`);
-            });
-        } else {
-            msg.reply("Failed to retrieve any data!");
-        }
+    const res = await timed.getAllUserValues(msg.author.id);
+    if(res.success) {
+        res.values.forEach(v => {
+            msg.channel.send(`Reminder ${v.id}: \`${v.extra.reminder}\` - ${moment(v.until).format("dddd, MMMM Do YYYY, h:mm:ss a")}`);
+        });
     } else {
-        const res = await timed.getAllCompUserValues(msg.author.id);
-        if(res.success) {
-            res.values.forEach(v => {
-                msg.channel.send(`Reminder ${v.id}: \`${v.extra.reminder}\` - ${moment(v.until).format("dddd, MMMM Do YYYY, h:mm:ss a")}`);
-            });
-        } else {
-            msg.reply("Failed to retrieve any data!");
-        }
+        msg.reply("Failed to retrieve any data!");
     }
 }, {
     name: "Remind Me List",
-    desc: "Get reminders",
-    args: [{type: "boolean", name: "Get all"}]
+    desc: "Get reminders"
 });
 
 const RemindMeRemoveNode = new CommandNode("remove", async (cli, command, msg) => {

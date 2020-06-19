@@ -61,7 +61,7 @@ const Logs = new CommandNode("logs", async (cli, command, msg) => {
 
         if(logData.success)
             msg.channel.send(`\`\`\`md
-#Log Settings
+# Log Settings
 * Enabled: ${logData.logs.enabled ? "Yes" : "No"}
 * Default Log Channel: ${logData.logs.default ? msg.guild.channels.cache.get(logData.logs.default).name : "Nothing"}${logData.logs.ujoinleave ? "\n* Join and Leave Log Channel: "+msg.guild.channels.cache.get(logData.logs.ujoinleave).name : ""}${logData.logs.ukicked ? "\n* Kicked Log Channel: "+msg.guild.channels.cache.get(logData.logs.ukicked).name : ""}${logData.logs.ubanned ? "\n* Banned Log Channel: "+msg.guild.channels.cache.get(logData.logs.ubanned).name : ""}${logData.logs.mdeleted ? "\n* Message Delete Log Channel: "+msg.guild.channels.cache.get(logData.logs.mdeleted).name : ""}${logData.logs.umuted ? "\n* Muted Log Channel: "+msg.guild.channels.cache.get(logData.logs.umuted).name : ""}${logData.logs.uwarned ? "\n* Warned Log Channel: "+msg.guild.channels.cache.get(logData.logs.uwarned).name : ""}  
 \`\`\``);

@@ -1,5 +1,6 @@
 const commonFilter = require("../other/swearWords");
 const emojis = require("emoji-regex")();
+const Profile = require("../classes/Profile");
 
 let FilteredMessages = new Map();
 
@@ -15,9 +16,10 @@ mustache.escape = function (value)
 };
 
 let Filter = async function(dcli, msg) {
-    if(!msg.guild || msg.author.id === dcli.user.id || msg.member.permissions.has(FLAGS.ADMINISTRATOR))
+    if(!msg.guild || msg.author.id === dcli.user.id || (msg.member && msg.member.permissions.has(FLAGS.ADMINISTRATOR)))
         return;
     const filterData = await DB.guild.getFilters(msg.guild.id);
+    
     if(filterData.success && filterData.data.enabled) {
         let splitCont = msg.content.split(" ");
         let set = filterData.data.words ? new Set(filterData.data.words) : null;
@@ -54,7 +56,15 @@ let WelcomeMessage = async function(member) {
 };
 
 module.exports = (discordCli) => {
-    discordCli.on("message", (msg) => {Filter(discordCli, msg);});
+    discordCli.on("message", (msg) => {
+        Filter(discordCli, msg);
+        
+        if(!msg.author.bot)
+            Profile.fetch(msg.author.id).then(v => {
+                v.guild_levels[0];
+                v.messageExp(msg, (lvl) => {if(msg.guild.id === "561905459439599616") msg.reply(`You're now level ${lvl}`);});
+            });
+    });
     discordCli.on("messageUpdate", (omsg, msg) => {Filter(discordCli, msg);});
     discordCli.on("guildMemberAdd", WelcomeMessage);
     discordCli.on("guildMemberRemove", member => {

@@ -4,7 +4,8 @@ const {Client, Nodes: {DataNode, AliasNode}} = require("framecord"),
     presenceChange = require("./other/discordPresence"),
     fs = require("fs"),
     {commands} = require("./controllers/dbMain"),
-    {Nodes} = require("./controllers/cache");
+    {Nodes} = require("./controllers/cache"),
+    cvs = require("./controllers/canv");
 
 const DotterClient = new Client(Config.discordToken, "dn", (cli) => {
     console.log(`Logged in as ${cli.discordCli.user.tag}`);

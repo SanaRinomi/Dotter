@@ -26,7 +26,7 @@ let getAnnouncements = async function(id) {
 
 let getWelcome = async function(id) {
     let res = await pg.from("guilds").select(["welcome"]).where({id});
-    if(res.length && res[0])
+    if(res.length && res[0] && res[0].welcome)
         return {id: id, success: true, data: res[0].welcome};
     else return {id: id, success: false};
 };
@@ -40,7 +40,7 @@ let getLogs = async function(id) {
 
 let getFilters = async function(id) {
     let res = await pg.from("guilds").select(["filters"]).where({id});
-    if(res.length && res[0])
+    if(res.length && res[0] && res[0].filters)
         return {id: id, success: true, data: res[0].filters};
     else return {id: id, success: false};
 };

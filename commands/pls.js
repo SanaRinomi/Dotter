@@ -9,22 +9,23 @@ const userq = {
 		"I guess this is what they call slap stick humor?",
 		"Why do humans enjoy violence?",
 		"...",
-		"Is this what is refered to as... Barbaric?"
+		"Is this what is refered to as... Barbaric?",
+		"*Blushes*"
 	],
 	poke: [
 		"What?", "Hello?", "How may I help you?",
 		"Squishy~!", "So soft~!", "Warm fingers~!",
 		"I wish I had a fleshy body...", "I really can't comprehend humans...", "What is this being trying to do?",
-		"Wut? Finger? Why?", "And that poke because...?", "Am I now a... 'Poke'-mon? :D", "*stares*"
+		"Wut? Finger? Why?", "And that poke because...?", "Am I now a... 'Poke'-mon? :D", "*stares*", "Poke me again, and I'll show you who your parental figure is!"
 	],
 	pat: [
-		"Thanks~!", "Thank you~!", "^w^", "Nyaa~!", "Comfy...!"
+		"Thanks~!", "Thank you~!", "^w^", "Nyaa~!", "Comfy...!", "*blushes*"
 	],
 	kiss: [
 		"What?", "*blush*", "So soft~!", "OwO", "^w^", "Thank you~! ❤", "*returns the kiss*"
 	],
 	hug: [
-		"Ara!", "*cuddles back*", "UwU Thank you~!"
+		"Ara~! Ara~!", "*cuddles back*", "UwU Thank you~!"
 	]
 };
 
@@ -53,7 +54,7 @@ const Baka = new CommandNode("baka", async (cli, command, msg) => {
 	} else if (mention.id === msg.author.id) {
 		sendGif(msg, img, `${msg.author} called themselves an idiot...`);
 	} else {
-		sendGif(msg, img, `${msg.author} calls ${mention} a BAAAAAAKA~!`);
+		sendGif(msg, img, `${msg.author} calls ${mention} a BAAAAAAKA~! *pouts*`);
 	}
 }, {
     desc: "Baaaka!!",
@@ -83,7 +84,7 @@ const Hug = new CommandNode("hug", async function(cli, command, msg) {
 		sendGif(msg, img, `${cli.discordCli.user} cuddled ${msg.author}~! <:peepoHuggy:582609341572448284>`);
 	} else if(mention.id === cli.discordCli.user.id) {
 		let rnd = Math.round(Math.random()*(userq.hug.length-1));
-		sendGif(msg, img, `${msg.author} hugged ${mention}! <:peepoHuggy:582609341572448284> They reacted with: "${userq.hug[rnd]}"`);
+		sendGif(msg, img, `${msg.author} hugged ${mention}! <:peepoHuggy:582609341572448284>\n\n${mention}: ${userq.hug[rnd]}`);
 	} else if (mention.id === msg.author.id) {
 		sendGif(msg, img, `${msg.author} hugged themselves!`);
 	} else {
@@ -109,7 +110,7 @@ const Kiss = new CommandNode("kiss", async function(cli, command, msg) {
 		sendGif(msg, img, `${cli.discordCli.user} kissed ${msg.author}! ❤`);
 	} else if(mention.id === cli.discordCli.user.id) {
 		let rnd = Math.round(Math.random()*(userq.kiss.length-1));
-		sendGif(msg, img, `${msg.author} kissed ${mention}! ❤ They reacted with: "${userq.kiss[rnd]}"`);
+		sendGif(msg, img, `${msg.author} kissed ${mention}! ❤\n\n${mention}: ${userq.kiss[rnd]}`);
 	} else if (mention.id === msg.author.id) {
 		sendGif(msg, img, `${msg.author} managed to kiss themselves! An amazing feat! ❤`);
 	} else {
@@ -159,7 +160,7 @@ const Pat = new CommandNode("pat", async function(cli, command, msg) {
 		sendGif(msg, img, `${cli.discordCli.user} patted ${msg.author} on the head~!`);
 	} else if(mention.id === cli.discordCli.user.id) {
 		let rnd = Math.round(Math.random()*(userq.pat.length-1));
-		sendGif(msg, img, `${msg.author} patted ${mention} on the head~! They reacted with: "${userq.pat[rnd]}"`);
+		sendGif(msg, img, `${msg.author} patted ${mention} on the head~!\n\n${mention}: ${userq.pat[rnd]}`);
 	} else if (mention.id === msg.author.id) {
 		sendGif(msg, img, `${msg.author} patted themselves on the head... Now... That's just sad!`);
 	} else {
@@ -178,7 +179,7 @@ const Poke = new CommandNode("poke", async function(cli, command, msg) {
 		sendGif(msg, img, `${msg.author} poked themselves for some strange reason...`);
 	} else if(mention.id === cli.discordCli.user.id) {
 		let rnd = Math.round(Math.random()*(userq.poke.length-1));
-		sendGif(msg, img, `${msg.author} poked ${mention}... They reacted with: "${userq.poke[rnd]}"`);
+		sendGif(msg, img, `${msg.author} poked ${mention}...\n\n${mention}: ${userq.poke[rnd]}`);
 	} else {
 		sendGif(msg, img, `${msg.author} poked ${mention}...`);
 	}
