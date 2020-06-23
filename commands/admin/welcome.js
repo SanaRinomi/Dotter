@@ -33,11 +33,6 @@ const welcomeEnable = new CommandNode("enable", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
         await DB.guild.addGuild(msg.guild.id);
         DB.guild.getWelcome(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Welcome failed to retrieve data!");
-                return;
-            }
-
             let data = welcomeData(welcome.data);
             data.enabled = comm.Args[0].Value;
 
@@ -60,11 +55,6 @@ const welcomeImage = new CommandNode("image", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
         await DB.guild.addGuild(msg.guild.id);
         DB.guild.getWelcome(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Welcome failed to retrieve data!");
-                return;
-            }
-
             let data = welcomeData(welcome.data);
             data.image = comm.Args[0].Value;
 
@@ -87,11 +77,6 @@ const welcomeMessage = new CommandNode("message", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
         await DB.guild.addGuild(msg.guild.id);
         DB.guild.getWelcome(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Welcome failed to retrieve data!");
-                return;
-            }
-
             let data = welcomeData(welcome.data);
             data.message = comm.Args[0].Value;
 
@@ -116,11 +101,6 @@ const welcomeChannel = new CommandNode("channel", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
         await DB.guild.addGuild(msg.guild.id);
         DB.guild.getWelcome(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Welcome failed to retrieve data!");
-                return;
-            }
-
             let data = welcomeData(welcome.data);
             data.channel = channel.id;
 

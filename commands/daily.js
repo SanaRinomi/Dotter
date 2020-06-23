@@ -35,8 +35,7 @@ const DailyComm = new CommandNode("daily", async (cli, command, msg) => {
             else {pf = await Profile.fetch(mention.user.id); other = true;}
 
             if(time && time.add(1, "day").isBefore()) {
-                console.log("This works");
-                pf.limits.daily_count = 0;
+                pf.limits.daily_count = 1;
             } else
                 pf.limits.daily_count += 1;
             

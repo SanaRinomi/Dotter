@@ -79,7 +79,7 @@ const LogsDefault = new CommandNode("default", async (cli, command, msg) => {
 }, {
     name: "Default Channel",
     desc: "Set the default log channel",
-    args: [{name: "Channel", type: "string"}],
+    args: [{name: "Channel", type: "channel"}],
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
@@ -88,7 +88,7 @@ const LogsUserJoinLeave = new CommandNode("joinleave", async (cli, command, msg)
 }, {
     name: "Join and Leave Channel",
     desc: "Set the join and leave log channel",
-    args: [{name: "Channel", type: "string"}],
+    args: [{name: "Channel", type: "channel"}],
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
@@ -97,7 +97,7 @@ const LogsUserKicked = new CommandNode("kicked", async (cli, command, msg) => {
 }, {
     name: "Kick Channel",
     desc: "Set the user kick log channel",
-    args: [{name: "Channel", type: "string"}],
+    args: [{name: "Channel", type: "channel"}],
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
@@ -106,7 +106,7 @@ const LogsUserBanned = new CommandNode("banned", async (cli, command, msg) => {
 }, {
     name: "Ban Channel",
     desc: "Set the user ban log channel",
-    args: [{name: "Channel", type: "string"}],
+    args: [{name: "Channel", type: "channel"}],
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
@@ -115,7 +115,7 @@ const LogsMessageDelete = new CommandNode("delete", async (cli, command, msg) =>
 }, {
     name: "Message Delete Channel",
     desc: "Set the message delete log channel",
-    args: [{name: "Channel", type: "string"}],
+    args: [{name: "Channel", type: "channel"}],
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
@@ -124,7 +124,7 @@ const LogsUserMuted = new CommandNode("muted", async (cli, command, msg) => {
 }, {
     name: "Mute Channel",
     desc: "Set the muted log channel",
-    args: [{name: "Channel", type: "string"}],
+    args: [{name: "Channel", type: "channel"}],
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
@@ -133,7 +133,7 @@ const LogsUserWarn = new CommandNode("warn", async (cli, command, msg) => {
 }, {
     name: "Warn Channel",
     desc: "Set the user warn log channel",
-    args: [{name: "Channel", type: "string"}],
+    args: [{name: "Channel", type: "channel"}],
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
