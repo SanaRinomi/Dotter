@@ -1,10 +1,5 @@
 const pg = require("./dbKnexConf");
 
-const ROLE_TYPES = {
-    MUTE_ROLE: 1,
-    USER_ROLES: 2
-};
-
 pg.schema.hasTable("roles").then(exists => {
     if(!exists) {
         pg.schema.createTable("roles", table => {
@@ -63,7 +58,6 @@ let changeValue = async function(id, type, roles) {
 };
 
 module.exports = {
-    ROLE_TYPES,
     addRoles,
     getValue,
     getAllRoles,

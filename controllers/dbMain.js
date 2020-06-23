@@ -4,6 +4,7 @@ const timed = require("./dbTimedEvents");
 const commands = require("./dbComms");
 const users = require("./dbUser");
 const levels = require("./dbLevels");
+const logs = require("./dbLogs");
 
 module.exports = {
     guild,
@@ -11,5 +12,6 @@ module.exports = {
     timed,
     commands,
     users,
-    levels
+    levels,
+    logs
 };

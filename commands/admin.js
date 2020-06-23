@@ -1,8 +1,9 @@
 const {Nodes: {CommandNode, AliasNode}, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
     {Kicked} = require("../controllers/cache"),
-    {roles} = require("../controllers/dbMain"),
-    {LogEvent, EVENTS, PRIORITIES} = require("../controllers/discordLogger");
+    {roles, logs} = require("../controllers/dbMain"),
+    {LogEvent} = require("../controllers/discordLogger"),
+    {EVENTS, PRIORITIES, ROLE_TYPES} = require("../controllers/constants");
 
 const Ban = new CommandNode("ban", (cli, command, msg) => {
     const mention = msg.mentions.members.first();
@@ -35,7 +36,7 @@ const Kick = new CommandNode("kick", (cli, command, msg) => {
     const user = mention.user;
     
     let kickMsg = new ConfirmationMessage(msg.author.id, (obj) => {
-        Kicked.set(mention.id, {reason: command.Args[1] && command.Args[1].Type === "string" ? command.Args[1].Value : "", enforcer: msg.author.tag});
+        Kicked.set(mention.id, {reason: command.Args[1] && command.Args[1].Type === "string" ? command.Args[1].Value : "", enforcer: msg.author.tag, enforcerID: msg.author.id});
         mention.kick(`[Enforcer: ${msg.member.displayName}] ${command.Args[1] && command.Args[1].Type === "string" ? command.Args[1].Value : ""}`)
         .then(() => {
             obj.Message.channel.send("**User has been kicked!**");
@@ -56,13 +57,14 @@ const Mute = new CommandNode("mute", (cli, command, msg) => {
     const mention = msg.mentions.members.first();
     const user = mention.user;
 
-    roles.getValue(msg.guild.id, roles.ROLE_TYPES.MUTE_ROLE).then(val => {
+    roles.getValue(msg.guild.id, ROLE_TYPES.MUTE_ROLE).then(val => {
         if(val.success && val.roles.length) {
             let muteMsg = new ConfirmationMessage(msg.author.id, (obj) => {
                 mention.roles.add(val.roles[0], `[Enforcer: ${msg.member.displayName}] ${command.Args[1] ? command.Args[1].Value : ""}`)
                 .then(() => {
                     obj.Message.channel.send("**User has been muted!**");
                     user.send(`You have been muted in **${msg.guild.name}**${command.Args[1] ? " for the following reason: " + command.Args[1].toCode(true) : ""}`);
+                    logs.addEvent(user.id, msg.guild.id, EVENTS.MUTED, msg.author.id, command.Args[1] ? command.Args[1].Value : null);
                     if(command.Args[1])
                         LogEvent(msg.guild, {desc: `\`${mention.user.tag}\` was muted by \`${msg.author.tag}\``, fields: [{name: "Target", value: mention.user.tag}, {name: "Enforcer", value: msg.author.tag}, {name: "Reason", value: command.Args[1].Value}]}, EVENTS.MUTED, PRIORITIES.MEDIUM);
                     else LogEvent(msg.guild, {desc: `\`${mention.user.tag}\` was muted by \`${msg.author.tag}\``, fields: [{name: "Target", value: mention.user.tag}, {name: "Enforcer", value: msg.author.tag}]}, EVENTS.MUTED, PRIORITIES.MEDIUM);
@@ -89,13 +91,14 @@ const Unmute = new CommandNode("unmute", (cli, command, msg) => {
     const mention = msg.mentions.members.first();
     const user = mention.user;
 
-    roles.getValue(msg.guild.id, roles.ROLE_TYPES.MUTE_ROLE).then(val => {
+    roles.getValue(msg.guild.id, ROLE_TYPES.MUTE_ROLE).then(val => {
         if(val.success && val.roles.length) {
             let unmuteMsg = new ConfirmationMessage(msg.author.id, (obj) => {
                 mention.roles.remove(val.roles[0], `[Enforcer: ${msg.member.displayName}] ${command.Args[1] ? command.Args[1].Value : ""}`)
                 .then(() => {
                     obj.Message.channel.send("**User has been unmuted!**");
                     user.send(`You have been unmuted in **${msg.guild.name}**${command.Args[1] ? " for the following reason: " + command.Args[1].toCode(true) : ""}`);
+                    logs.addEvent(user.id, msg.guild.id, EVENTS.UNMUTED, msg.author.id, command.Args[1] ? command.Args[1].Value : null);
                     if(command.Args[1])
                         LogEvent(msg.guild, {desc: `\`${mention.user.tag}\` was unmuted by \`${msg.author.tag}\``, fields: [{name: "Target", value: mention.user.tag}, {name: "Enforcer", value: msg.author.tag}, {name: "Reason", value: command.Args[1].Value}]}, EVENTS.UNMUTED, PRIORITIES.MEDIUM);
                     else LogEvent(msg.guild, {desc: `\`${mention.user.tag}\` was unmuted by \`${msg.author.tag}\``, fields: [{name: "Target", value: mention.user.tag}, {name: "Enforcer", value: msg.author.tag}]}, EVENTS.UNMUTED, PRIORITIES.MEDIUM);

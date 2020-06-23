@@ -1,12 +1,6 @@
 const pg = require("./dbKnexConf");
 const moment = require("moment");
 
-const TIMED_E_TYPES = {
-    REMIND_ME: 1,
-    BAN_LIMIT: 2,
-    MUTE_LIMIT: 3
-};
-
 pg.schema.hasTable("timed").then(exists => {
     if(!exists) {
         pg.schema.createTable("timed", table => {
@@ -147,7 +141,6 @@ let removeValue = async function(id, user) {
 };
 
 module.exports = {
-    TIMED_E_TYPES,
     IsValidTime,
     StringToTime,
     getValues,

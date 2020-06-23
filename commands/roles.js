@@ -1,6 +1,7 @@
 const {Nodes: {CommandNode, AliasNode}, ListMessage, ReactionMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    {roles} = require("../controllers/dbMain");
+    {roles} = require("../controllers/dbMain"),
+    {ROLE_TYPES} = require("../controllers/constants");
 
 const Mustache = require("mustache");
 const RoleAmount = 10;
@@ -50,7 +51,7 @@ function setURole(obj, reaction, user, deleted, msg) {
 }
 
 const RolesNode = new CommandNode("roles", async (cli, command, msg) => {
-    let uroles = await roles.getValue(msg.guild.id, roles.ROLE_TYPES.USER_ROLES);
+    let uroles = await roles.getValue(msg.guild.id, ROLE_TYPES.USER_ROLES);
 
     if(uroles.success && uroles.roles.length > RoleAmount){
         const limit = Math.ceil(uroles.length / RoleAmount)-1;

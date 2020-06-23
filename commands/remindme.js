@@ -1,7 +1,8 @@
 const {Nodes: {CommandNode, AliasNode}, ListMessage, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
     {timed} = require("../controllers/dbMain"),
-    moment = require("moment");
+    moment = require("moment"),
+    {TIMED_EVENTS} = require("../controllers/constants");
 
 const Mustache = require("mustache");
 const RoleAmount = 10;
@@ -11,7 +12,7 @@ const RemindMeNode = new CommandNode("remindme", async (cli, command, msg) => {
     if(timed.IsValidTime(command.Args[1].Value)) {
         const time = timed.StringToTime(command.Args[1].Value);
         const conf = new ConfirmationMessage(msg.author.id, () => {
-            timed.addTimedEvent(msg.author.id, msg.guild.id, timed.TIMED_E_TYPES.REMIND_ME, time.value.end.toISOString(), {reminder: command.Args[0].Value, channel: msg.channel.id}).then(v => {
+            timed.addTimedEvent(msg.author.id, msg.guild.id, TIMED_EVENTS.REMIND_ME, time.value.end.toISOString(), {reminder: command.Args[0].Value, channel: msg.channel.id}).then(v => {
                 if(v) {
                     conf.Message.edit("Reminder set!");
                 } else {

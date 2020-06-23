@@ -1,7 +1,9 @@
 const userData = require("./discordUserData");
 const {timed} = require("../controllers/dbMain");
 const moment = require("moment");
-const {MessageEmbed} = require("discord.js");
+const {MessageEmbed} = require("discord.js"),
+    {TIMED_EVENTS} = require("../controllers/constants"),
+    {Users} = require("../controllers/cache");
 
 let client;
 
@@ -10,6 +12,7 @@ async function _30seconds() {
 
     setInterval(async () => {
         num = await changePresence(num);
+        Users.forEach(v => v.syncUser());
     }, 30000);
 }
 
@@ -24,7 +27,7 @@ async function getAllValues() {
     if(vals.success) {
         vals.values.forEach(v => {
             switch(v.type) {
-                case timed.TIMED_E_TYPES.REMIND_ME:
+                case TIMED_EVENTS.REMIND_ME:
                     let channel = client.discordCli.channels.cache.get(v.extra.channel);
                     if(channel) {
                         let member = channel.guild.members.cache.get(v.user);
@@ -35,14 +38,11 @@ async function getAllValues() {
                         channel.send(`${member}`, embed).then(() => {
                             timed.removeValue(v.id, v.user);
                         });
-                        // channel.send(`**Reminder for ${member}**\`\`\`md\n# Reminder\n\n- REMEMBER: ${v.extra.reminder}\n\n## Reminder Info\n* ID: ${v.id}\n* Created On: ${moment(v.created_at).format("dddd, MMMM Do YYYY, h:mm:ss a")}\n\`\`\``).then(() => {
-                        //     timed.removeValue(v.id, v.user);
-                        // });
                     }
                     break;
-                case timed.TIMED_E_TYPES.BAN_LIMIT:
+                case TIMED_EVENTS.BAN_LIMIT: // TODO: Code in ban limit
                     break;
-                case timed.TIMED_E_TYPES.MUTE_LIMIT:
+                case TIMED_EVENTS.MUTE_LIMIT: // TODO: Code in mute limit
                     break;
                 default: break;
             }

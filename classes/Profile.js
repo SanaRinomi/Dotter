@@ -5,11 +5,12 @@ const moment = require("moment");
 // const {ProfileTemp} = require("../controllers/canv");
 
 class Profile {
-    constructor(id, data = {nickname: "", description: "", reputation: 0, currency: 0, limits: {rep: moment().toDate(), daily: moment().toDate(), daily_count: 0}, background: "Base"},
+    constructor(id, data = {username: "", nickname: "", description: "", reputation: 0, currency: 0, limits: {rep: moment().toDate(), daily: moment().toDate(), daily_count: 0}, background: "Base"},
     lvls = {exp: 0, level: 0, expMulti: 1.8}) {
         this.expCalls = 0;
 
         this.id = id;
+        this.username = data.username ? data.username : "";
         this.nickname = data.nickname;
         this.description = data.description;
         this.reputation = data.reputation;
@@ -19,6 +20,7 @@ class Profile {
         this.global_level = SimpleLevels.fromJSON(lvls);
         this.guild_levels = [];
         this.background = data.background ? data.background : "Base";
+        this.TTL = moment().add(3, "minutes");
         // if(!ProfileTemp._backgrounds(this.background)) this.background = "Base";
         
         levels.getGuildsLevels(id).then(v => {
@@ -71,9 +73,24 @@ class Profile {
         users.updateProfile(this.id, json.profile);
     }
 
+    async syncUser() {
+        if(this.TTL.isBefore()) {
+            this.TTL = moment().add(3, "minutes");
+            let json = (await users.getUser(this.id)).data.profile;
+            this.username = json.username;
+            this.nickname = json.nickname;
+            this.description = json.description;
+            this.reputation = json.reputation;
+            this.currency = json.currency;
+            this.limits = json.limits;
+            this.background = json.background;
+        }
+    }
+
     toJSON(bool = false) {
         return {
             profile: {
+                username : this.username,
                 nickname: this.nickname,
                 description: this.description,
                 reputation: this.reputation,

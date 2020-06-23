@@ -8,7 +8,8 @@ const DB = require("./dbMain"),
     mustache = require("mustache"),
     DLog = require("./discordLogger"),
     Cache = require("./cache"),
-    {Permissions: {FLAGS}} = require("discord.js");
+    {Permissions: {FLAGS}} = require("discord.js"),
+    {EVENTS, PRIORITIES} = require("./constants");
 
 mustache.escape = function (value)
 {
@@ -41,7 +42,9 @@ let Filter = async function(dcli, msg) {
 };
 
 let WelcomeMessage = async function(member) {
-    DLog.LogEvent(member.guild, `User \`${member.user.tag}\` has joined this Discord guild`, DLog.EVENTS.USER_JOIN);
+    DLog.LogEvent(member.guild, `User \`${member.user.tag}\` (ID: \`${member.user.id}\`) has joined this Discord guild`, EVENTS.USER_JOIN);
+    if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_JOIN);
+    
     const welcomeData = await DB.guild.getWelcome(member.guild.id);
     if(welcomeData.success && welcomeData.data.enabled && welcomeData.data.channel && welcomeData.data.message) {
         const data = {
@@ -59,10 +62,14 @@ module.exports = (discordCli) => {
     discordCli.on("message", (msg) => {
         Filter(discordCli, msg);
         
-        if(!msg.author.bot)
+        if(!msg.author.bot && !msg.system)
             Profile.fetch(msg.author.id).then(v => {
                 v.guild_levels[0];
                 v.messageExp(msg, (lvl) => {if(msg.guild.id === "561905459439599616") msg.reply(`You're now level ${lvl}`);});
+                if(v.username !== msg.author.username) {
+                    v.username = msg.author.username;
+                    v.profileUpdate();
+                }
             });
     });
     discordCli.on("messageUpdate", (omsg, msg) => {Filter(discordCli, msg);});
@@ -70,16 +77,20 @@ module.exports = (discordCli) => {
     discordCli.on("guildMemberRemove", member => {
         let v = Cache.Kicked.get(member.id);
         if(v !== undefined){
-            let fields = [{name: "Target", value: member.user.tag}, {name: "Enforcer", value: v.enforcer}];
+            let fields = [{name: "Target", value: `${member.user.tag} (ID: \`${member.user.id}\`)`}, {name: "Enforcer", value: v.enforcer}];
             if(v.reason) fields.push({name: "Reason", value: v.reason});
-            DLog.LogEvent(member.guild, {desc: `User \`${member.user.tag}\` was kicked!`, fields}, DLog.EVENTS.USER_KICKED, DLog.PRIORITIES.MEDIUM);
+            DLog.LogEvent(member.guild, {desc: `User \`${member.user.tag}\` was kicked!`, fields}, EVENTS.USER_KICKED, PRIORITIES.MEDIUM);
+            if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_KICKED, v.enforcerID, v.reason);
             Cache.Kicked.delete(member.id);
         }
-        else DLog.LogEvent(member.guild, `User \`${member.user.tag}\` left the guild.`, DLog.EVENTS.USER_LEAVE);
+        else {
+            DLog.LogEvent(member.guild, `User \`${member.user.tag}\` (ID: \`${member.user.id}\`) left the guild.`, EVENTS.USER_LEAVE);
+            if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_LEAVE);
+        }
     });
     discordCli.on("guildBanAdd", async (guild, user) => {
         let info = await guild.fetchBan(user);
-        DLog.LogEvent(guild, `User \`${user.tag}\` was banned from the guild${info.reason ? " for the following reason: ```\n"+info.reason+"\n```":"!"}`, DLog.EVENTS.USER_BANNED, DLog.PRIORITIES.HIGH);
+        DLog.LogEvent(guild, `User \`${user.tag}\` (ID: \`${user.id}\`) was banned from the guild${info.reason ? " for the following reason: ```\n"+info.reason+"\n```":"!"}`, EVENTS.USER_BANNED, PRIORITIES.HIGH);
     });
     discordCli.on("messageDelete", msg => {
         if(msg.author.bot) return;
@@ -87,6 +98,6 @@ module.exports = (discordCli) => {
         let reason = FilteredMessages.get(msg.id) ? {name: "Reason", value: FilteredMessages.get(msg.id)} : {name: "Reason", value: "\`None\`"};
         let message = /\S/.test(msg.cleanContent) ? {name: "Message", value: msg.cleanContent} : {name: "Message", value: "\`None\`"};
         FilteredMessages.delete(msg.id);
-        DLog.LogEvent(msg.guild, {desc: `A message by \`${msg.author.tag}\` was deleted.`, fields: [message, attachments, reason]}, DLog.EVENTS.MESSAGE_DELETED);
+        DLog.LogEvent(msg.guild, {desc: `A message by \`${msg.author.tag}\` (ID: \`${msg.author.id}\`) was deleted.`, fields: [message, attachments, reason]}, EVENTS.MESSAGE_DELETED);
     });
 };

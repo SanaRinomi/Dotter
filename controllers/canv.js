@@ -49,44 +49,6 @@ const styles = [
     }
 ];
 
-const oldStyle = [
-    {
-        id: "default",
-        data: {
-            font: "12px \"PT Sans\"",
-            textAlign: "left",
-            textBaseline: "top",
-            fillStyle: "#000",
-            strokeStyle: "#000"
-        }
-    },
-    {
-        id: "titleText",
-        data: {
-            font: "19px \"PT Sans\""
-        }
-    },
-    {
-        id: "subtitleText",
-        data: {
-            font: "bold 16px \"PT Sans\""
-        }
-    },
-    {
-        id: "medText",
-        data: {
-            font: "14px \"PT Sans\""
-        }
-    },
-    {
-        id: "tinyText",
-        data: {
-            font: "9px \"PT Sans\"",
-            textAlign: "center"
-        }
-    }
-];
-
 class Template {
     constructor(templateDir) {
         this._backgrounds = new Map();

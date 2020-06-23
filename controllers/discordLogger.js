@@ -1,23 +1,6 @@
 const DB = require("./dbMain"),
-    {MessageEmbed} = require("discord.js");
-
-const PRIORITIES = {
-    LOW: "#4256f4",
-    MEDIUM: "#50e542",
-    HIGH: "#eadc10",
-    CRITICAL: "#e00f0f"
-};
-
-const EVENTS = {
-    USER_JOIN: 0,
-    USER_LEAVE: 1,
-    USER_KICKED: 2,
-    USER_BANNED: 3,
-    MESSAGE_DELETED: 4,
-    MUTED: 5,
-    WARNS: 6,
-    UNMUTED: 7,
-};
+    {MessageEmbed} = require("discord.js"),
+    {EVENTS, PRIORITIES} = require("./constants");
 
 function embed(message, priority, type) {
     const priorityStr = priority === PRIORITIES.LOW ? "LOW" : priority === PRIORITIES.MEDIUM ? "MEDIUM" : priority === PRIORITIES.HIGH ? "HIGH" : priority === PRIORITIES.CRITICAL ? "CRITICAL" : "";
