@@ -19,6 +19,9 @@ function embed(message, priority, type) {
         case EVENTS.USER_BANNED:
             evName = "User Banned";
             break;
+        case EVENTS.USER_UNBANNED:
+            evName = "User Unbanned";
+            break;
         case EVENTS.MESSAGE_DELETED:
             evName = "Message Deleted";
             break;
@@ -30,6 +33,9 @@ function embed(message, priority, type) {
             break;
         case EVENTS.UNMUTED:
             evName = "User Unmuted";
+            break;
+        case EVENTS.ERROR:
+            evName = "Error";
             break;
         default:
             evName = "Unspecified";
@@ -83,6 +89,7 @@ const LogEvent = async function(guild, message, type, priority = PRIORITIES.LOW)
                     defChnl();
                     break;
                 case EVENTS.USER_BANNED:
+                case EVENTS.USER_UNBANNED:
                     if(logVal.logs.ubanned) {
                         let channel = guild.channels.cache.get(logVal.logs.ubanned);
                         if(channel) {channel.send(embed(message, priority, type)); break;}

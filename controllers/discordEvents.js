@@ -42,7 +42,7 @@ let Filter = async function(dcli, msg) {
 };
 
 let WelcomeMessage = async function(member) {
-    DLog.LogEvent(member.guild, `User \`${member.user.tag}\` (ID: \`${member.user.id}\`) has joined this Discord guild`, EVENTS.USER_JOIN);
+    DLog.LogEvent(member.guild, {desc: `User \`${member.user.tag}\` has joined this Discord guild`, fields: [{name: "User ID", value: member.user.id}]}, EVENTS.USER_JOIN);
     if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_JOIN);
     
     const welcomeData = await DB.guild.getWelcome(member.guild.id);
@@ -76,6 +76,7 @@ module.exports = (discordCli) => {
     discordCli.on("guildMemberAdd", WelcomeMessage);
     discordCli.on("guildMemberRemove", member => {
         let v = Cache.Kicked.get(member.id);
+        let vv = Cache.Banned.get(member.id);
         if(v !== undefined){
             let fields = [{name: "Target", value: `${member.user.tag} (ID: \`${member.user.id}\`)`}, {name: "Enforcer", value: v.enforcer}];
             if(v.reason) fields.push({name: "Reason", value: v.reason});
@@ -83,14 +84,48 @@ module.exports = (discordCli) => {
             if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_KICKED, v.enforcerID, v.reason);
             Cache.Kicked.delete(member.id);
         }
-        else {
-            DLog.LogEvent(member.guild, `User \`${member.user.tag}\` (ID: \`${member.user.id}\`) left the guild.`, EVENTS.USER_LEAVE);
+        else if(vv === undefined) {
+            DLog.LogEvent(member.guild, {desc: `User \`${member.user.tag}\` left the guild.`, fields: [{name: "User ID", value: member.user.id}]}, EVENTS.USER_LEAVE);
             if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_LEAVE);
+            Cache.Kicked.delete(member.id);
         }
     });
     discordCli.on("guildBanAdd", async (guild, user) => {
-        let info = await guild.fetchBan(user);
-        DLog.LogEvent(guild, `User \`${user.tag}\` (ID: \`${user.id}\`) was banned from the guild${info.reason ? " for the following reason: ```\n"+info.reason+"\n```":"!"}`, EVENTS.USER_BANNED, PRIORITIES.HIGH);
+        let v = Cache.Banned.get(user.id);
+        let fields = [];
+        if(v !== undefined) {
+            fields.push({name: "Target", value: `\`${v.target.tag}\` (ID: \`${v.target.id}\`)`});
+            fields.push({name: "Enforcer", value: v.enforcer});
+            if(v.reason) fields.push({name: "Reason", value: v.reason});
+            if(v.time) fields.push({name: "Time", value: `${v.time.value.end.fromNow(true)} (${v.time.value.end.format("DD MMM YYYY, HH:mm Z")})`});
+            DLog.LogEvent(guild, {desc: `User \`${v.target.tag}\` was banned from the guild.`, fields}, EVENTS.USER_BANNED, PRIORITIES.HIGH);
+            Cache.Banned.delete(user.id);
+        } else {
+            let info = await guild.fetchBan(user);
+            fields.push({name: "Target", value: `\`${user.tag}\` (ID: \`${user.id}\`)`});
+            if(info.reason) fields.push({name: "Reason", value: info.reason});
+            DLog.LogEvent(guild, {desc: `User \`${user.tag}\` was banned from the guild.`, fields}, EVENTS.USER_BANNED, PRIORITIES.HIGH);
+        }
+    });
+    discordCli.on("guildBanRemove", async (guild, user) => {
+        let v = Cache.Unbanned.get(user.id);
+        let fields = [];
+        if(v !== undefined) {
+            fields.push({name: "Target", value: `\`${v.target}\` (ID: \`${user.id}\`)`});
+            fields.push({name: "Enforcer", value: v.enforcer});
+            if(v.time) {
+                fields.push({name: "Unban Reason", value: "Ban time limit reached."});
+                if(v.reason) fields.push({name: "Ban Reason", value: v.reason});
+                fields.push({name: "Start Date", value: `${v.time.start.fromNow()} (${v.time.start.format("DD MMM YYYY, HH:mm Z")})`});
+                fields.push({name: "End Date", value: `${v.time.end.format("DD MMM YYYY, HH:mm Z")}`});
+            }else if(v.reason) fields.push({name: "Unban Reason", value: v.reason});
+
+            DLog.LogEvent(guild, {desc: `User \`${v.target}\` was unbanned from the guild.`, fields}, EVENTS.USER_UNBANNED, PRIORITIES.MEDIUM);
+            Cache.Unbanned.delete(user.id);
+        } else {
+            fields.push({name: "Target", value: `\`${user.tag}\` (ID: \`${user.id}\`)`});
+            DLog.LogEvent(guild, {desc: `User \`${user.tag}\` was unbanned from the guild.`, fields}, EVENTS.USER_UNBANNED, PRIORITIES.MEDIUM);
+        }
     });
     discordCli.on("messageDelete", msg => {
         if(msg.author.bot) return;

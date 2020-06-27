@@ -15,6 +15,7 @@ const EVENTS = {
     WARNS: 6,
     UNMUTED: 7,
     USER_UNBANNED: 8,
+    ERROR: 9,
 };
 
 const TIMED_EVENTS = { // Used to be TIMED_E_TYPES

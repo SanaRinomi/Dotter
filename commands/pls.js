@@ -82,13 +82,12 @@ const Hug = new CommandNode("hug", async function(cli, command, msg) {
 		mention = msg.mentions.members.first();
 	if (!mention) {
 		sendGif(msg, img, `${cli.discordCli.user} cuddled ${msg.author}~! <:peepoHuggy:582609341572448284>`);
-	} else if(mention.id === cli.discordCli.user.id) {
-		let rnd = Math.round(Math.random()*(userq.hug.length-1));
-		sendGif(msg, img, `${msg.author} hugged ${mention}! <:peepoHuggy:582609341572448284>\n\n${mention}: ${userq.hug[rnd]}`);
 	} else if (mention.id === msg.author.id) {
 		sendGif(msg, img, `${msg.author} hugged themselves!`);
 	} else {
-		sendGif(msg, img, `${msg.author} hugged ${mention}! <:peepoHuggy:582609341572448284>`);
+		let bot = msg.mentions.members.get(cli.discordCli.user.id);
+		let rnd = bot ? Math.round(Math.random()*(userq.hug.length-1)) : null;
+		sendGif(msg, img, `${msg.author} hugged ${msg.mentions.members.map(v => v.toString()).reduce((v,vv,i,arr) => {return i===arr.length-1?`${v} and ${vv}`:`${v}, ${vv}`;})}! <:peepoHuggy:582609341572448284>${bot?"\n\n"+bot.toString()+": " +userq.hug[rnd]:""}`);
 	}
 }, {
     desc: "Get and recieve cuddles",
