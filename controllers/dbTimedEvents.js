@@ -92,6 +92,13 @@ let getAllUserValues = async function(user) {
     else return {id: user, success: false};
 };
 
+let getUserValuesOf = async function(user, type) {
+    let res = await pg.from("timed").select().where({user, type});
+    if(res.length)
+        return {id: user, success: true, values: res};
+    else return {id: user, success: false};
+};
+
 let getAllGuildValues = async function(guild) {
     let res = await pg.from("timed").select().where({guild});
     if(res.length)
@@ -146,6 +153,7 @@ module.exports = {
     getValues,
     getValue,
     getAllUserValues,
+    getUserValuesOf,
     getAllGuildValues,
     getAllCompletedValues,
     getAllCompUserValues,

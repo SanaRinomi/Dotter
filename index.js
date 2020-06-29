@@ -1,7 +1,7 @@
 const {Client, Nodes: {DataNode, AliasNode}} = require("framecord"),
     Config = require("./config.json"),
     path = require("path"),
-    presenceChange = require("./other/discordPresence"),
+    timer = require("./other/timer"),
     fs = require("fs"),
     {commands} = require("./controllers/dbMain"),
     {Nodes} = require("./controllers/cache"),
@@ -44,7 +44,7 @@ DotterClient.registerNode(new AliasNode("$", AdminBase));
 
 const helpCommand = require("./other/help");
 
-presenceChange(DotterClient);
+timer(DotterClient);
 
 function loadModules(startPath = "./commands") {
     let paths = [startPath];

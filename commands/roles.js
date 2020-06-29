@@ -54,15 +54,15 @@ const RolesNode = new CommandNode("roles", async (cli, command, msg) => {
     let uroles = await roles.getValue(msg.guild.id, ROLE_TYPES.USER_ROLES);
 
     if(uroles.success && uroles.roles.length > RoleAmount){
-        const limit = Math.ceil(uroles.length / RoleAmount)-1;
+        const limit = Math.ceil(uroles.roles.length / RoleAmount)-1;
         const list = new ListMessage(msg.author.id, async (index) => {
             return roleFunc(msg.guild, uroles, index, RoleAmount, limit);
-        }, {func: (obj, reaction, user, deleted) => {setURole(obj, reaction, user, deleted, msg);}, emotes: reactionArr, fireonce: true});
+        }, {func: (obj, reaction, user, deleted) => {setURole(obj, reaction, user, deleted, msg);}, emotes: reactionArr, fireonce: false});
         list.IndexLimit = limit;
         list.send(msg.channel);
     } else {
         if(uroles.roles && uroles.roles.length){
-            const rcMsg = new ReactionMessage(msg.author.id, (obj, reaction, user, deleted) => {setURole(obj, reaction, user, deleted, msg);}, reactionArr.slice(0, uroles.roles.length), true, undefined, 60000);
+            const rcMsg = new ReactionMessage(msg.author.id, (obj, reaction, user, deleted) => {setURole(obj, reaction, user, deleted, msg);}, reactionArr.slice(0, uroles.roles.length), false, undefined, 60000);
             rcMsg.onEnd = (obj) => {obj.Message.edit(obj.Message.content+"**Roles timed out!**");};
             rcMsg.send(msg.channel, roleFunc(msg.guild, uroles, 0, RoleAmount, 0));
         } else {

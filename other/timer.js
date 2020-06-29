@@ -35,9 +35,11 @@ async function getAllValues() {
                 return;
             }
 
+            let channel;
+
             switch(v.type) {
                 case TIMED_EVENTS.REMIND_ME:
-                    let channel = client.discordCli.channels.cache.get(v.extra.channel);
+                    channel = client.discordCli.channels.cache.get(v.extra.channel);
                     if(channel) {
                         let member = channel.guild.members.cache.get(v.user);
                         let embed = new MessageEmbed();
@@ -45,6 +47,21 @@ async function getAllValues() {
                         embed.setAuthor(`Reminder for ${member.user.username}`, member.user.displayAvatarURL({dynamic: true}));
                         embed.setFooter(`ID: ${v.id} | Set on: ${moment(v.created_at).format("DD MMM YYYY, HH:mm Z")}`);
                         channel.send(`${member}`, embed).then(() => {
+                            timed.removeValue(v.id, v.user);
+                        });
+                    } else {
+                        let vv = attempts.get(v.id);
+                        vv = vv ? vv : 0;
+                        if(vv > 5) {
+                            timed.removeValue(v.id, v.user);
+                            attempts.delete(v.id);
+                        } else attempts.set(v.id, vv++);
+                    }
+                    break;
+                case TIMED_EVENTS.SCHEDULED_MESSAGE:
+                    channel = client.discordCli.channels.cache.get(v.extra.channel);
+                    if(channel) {
+                        channel.send(v.extra.message).then(() => {
                             timed.removeValue(v.id, v.user);
                         });
                     } else {

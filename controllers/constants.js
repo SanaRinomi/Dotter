@@ -21,7 +21,8 @@ const EVENTS = {
 const TIMED_EVENTS = { // Used to be TIMED_E_TYPES
     REMIND_ME: 1,
     BAN_LIMIT: 2,
-    MUTE_LIMIT: 3
+    MUTE_LIMIT: 3,
+    SCHEDULED_MESSAGE: 4,
 };
 
 const ROLE_TYPES = {

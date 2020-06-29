@@ -5,11 +5,48 @@ const {Nodes: {CommandNode, AliasNode}, ListMessage, ConfirmationMessage} = requ
     {TIMED_EVENTS} = require("../controllers/constants");
 
 const Mustache = require("mustache");
-const RoleAmount = 10;
-const MsgArr = new Map();
+const ReminderAmount = 10;
+
+function reminderFunc(username, reminders, index = 0, amount = 0, limit = 0) {
+    const data = {
+        username: username,
+        haschildren: reminders ? true : false,
+        children: () => {
+            if(!reminders.success || !reminders.values.length) return;
+            let page = reminders.values.slice((index) * amount, (index+1) * amount);
+            let arr = page.map((v, i) => {return {...v, index: i+1, for: moment(v.until).format("dddd, MMMM Do YYYY, h:mm:ss a")};});
+
+            return arr;
+        },
+        index: index+1,
+        limit: limit+1
+    };
+
+    const render = Mustache.render(
+`\`\`\`md
+# Reminders for {{{username}}}
+
+## 🧾 Reminders ({{index}}/{{limit}}){{#children}}
+{{index}}) [🆔: {{id}}] {{{extra.reminder}}} - {{for}}{{/children}}
+\`\`\``
+        , data);    
+    
+    return render;
+}
 
 const RemindMeNode = new CommandNode("remindme", async (cli, command, msg) => {
     if(timed.IsValidTime(command.Args[1].Value)) {
+        if(msg.mentions.everyone) {
+            msg.reply("Please refrain from mentioning everyone in reminders.");
+            return;
+        }
+
+        const role = msg.mentions.roles.first(), user = msg.mentions.members.first();
+        if(role || user) {
+            msg.reply("Please refrain from mentioning other users and roles in reminders.");
+            return;
+        }
+
         const time = timed.StringToTime(command.Args[1].Value);
         const conf = new ConfirmationMessage(msg.author.id, () => {
             timed.addTimedEvent(msg.author.id, msg.guild.id, TIMED_EVENTS.REMIND_ME, time.value.end.toISOString(), {reminder: command.Args[0].Value, channel: msg.channel.id}).then(v => {
@@ -31,13 +68,18 @@ const RemindMeNode = new CommandNode("remindme", async (cli, command, msg) => {
 });
 
 const RemindMeListNode = new CommandNode("list", async (cli, command, msg) => {
-    const res = await timed.getAllUserValues(msg.author.id);
-    if(res.success) {
-        res.values.forEach(v => {
-            msg.channel.send(`Reminder ${v.id}: \`${v.extra.reminder}\` - ${moment(v.until).format("dddd, MMMM Do YYYY, h:mm:ss a")}`);
-        });
+    const res = await timed.getUserValuesOf(msg.author.id, TIMED_EVENTS.REMIND_ME);
+    if(res.success && res.values.length) {
+        if(res.values.length > ReminderAmount) {
+            const limit = Math.ceil(res.values.length / ReminderAmount)-1;
+            const list = new ListMessage(msg.author.id, async (index) => {
+                return reminderFunc(msg.author.tag, res, index, ReminderAmount, limit);
+            });
+            list.IndexLimit = limit;
+            list.send(msg.channel);
+        } else msg.channel.send(reminderFunc(msg.author.tag, res, 0, ReminderAmount, 0));
     } else {
-        msg.reply("Failed to retrieve any data!");
+        msg.reply("We haven't found any data!");
     }
 }, {
     name: "Remind Me List",

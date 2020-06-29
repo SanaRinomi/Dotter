@@ -69,7 +69,7 @@ function setUBkg(obj, reaction, uprofile, msg) {
 }
 
 const ProfileComm = new CommandNode("profile", async (cli, command, msg) => {
-    const mention = msg.mentions.members.first();
+    const mention = msg.guild ? msg.mentions.members.first() : null;
     let user = msg.author;
     if(mention) user = mention.user;
     msg.channel.send(null, new MessageAttachment(await getProfile(user.id, user.tag, user.avatarURL({format: "png"})), `profile-${user.tag}.png`));

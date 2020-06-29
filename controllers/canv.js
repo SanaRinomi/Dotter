@@ -8,7 +8,7 @@ Canvas.registerFont("./assets/fonts/NotoEmoji-Regular.ttf", {family: "Noto Emoji
 // Language Support (Devanagari, Bengali, Tamil, Gujarati and Telugu)
 Canvas.registerFont("./assets/fonts/Hind-Regular.ttf", {family: "Hind", weight: "normal", style: "normal"});
 Canvas.registerFont("./assets/fonts/Hind-Bold.ttf", {family: "Hind", weight: "bold", style: "normal"});
-Canvas.registerFont("./assets/fonts/HindGuntur-Light.ttf", {family: "Hind Guntur", weight: "light", style: "normal"});
+Canvas.registerFont("./assets/fonts/Hind-Light.ttf", {family: "Hind", weight: "light", style: "normal"});
 Canvas.registerFont("./assets/fonts/HindGuntur-Regular.ttf", {family: "Hind Guntur", weight: "normal", style: "normal"});
 Canvas.registerFont("./assets/fonts/HindGuntur-Bold.ttf", {family: "Hind Guntur", weight: "bold", style: "normal"});
 Canvas.registerFont("./assets/fonts/HindGuntur-Light.ttf", {family: "Hind Guntur", weight: "light", style: "normal"});
@@ -74,6 +74,13 @@ const styles = [
         }
     },
     {
+        id: "level",
+        data: {
+            font: `20px ${fonts}`,
+            textAlign: "center"
+        }
+    },
+    {
         id: "h1",
         data: {
             font: `bold 16px ${fonts}`
@@ -100,6 +107,13 @@ const styles = [
     {
         id: "center",
         data: {
+            textAlign: "center"
+        }
+    },
+    {
+        id: "h3-center",
+        data: {
+            font: `12px ${fonts}`,
             textAlign: "center"
         }
     }
@@ -149,12 +163,14 @@ const bkstyles = [
 ];
 
 class Template {
-    constructor(templateDir) {
+    constructor(templateDir, width = 300, height = 300) {
         this._backgrounds = new Map();
         this._template = null;
         this._steps = [];
         this._styles = new Map();
         this._imgCache = new Map();
+        this._width = width;
+        this._height = height;
 
         this.loadTemplate(templateDir);
     }
@@ -225,7 +241,7 @@ class Template {
     }
 
     async generate(data = {bkgnd: null}, stream = true) {
-        const canvas = Canvas.createCanvas(300, 300);
+        const canvas = Canvas.createCanvas(this._width, this._height);
         const ctx = canvas.getContext("2d");
 
         ctx.drawImage(data.bkgnd ? this._backgrounds.get(data.bkgnd) : this._backgrounds.values[0], 0, 0);
@@ -409,7 +425,31 @@ ProfileTemp.addStep({type: "fillStyle", data: "rgb(0, 106, 194)"});
 ProfileTemp.addStep((ctx, data) => {ctx.fillRect(30, 165, 1.05*data.leveling.global.reqs.percentage, 12);});
 ProfileTemp.addTextBlock("{{level.percentage}}% ({{level.currExp}}/{{level.req}})", 82.5, 164, 105, 10, {style: "center", lnHeight: 3, fontSize: 9});
 
+
+const LevelGuildTemp = new Template("./assets/imgs/templates/level-guild.png", 300, 120);
+LevelGuildTemp.loadBackgrounds("./assets/imgs/backgrounds/level", ["Base", "Purple Checker", "B&W Spiral", "Waterfall", "Country Hill", "Stars", "Bamboo Forest", "Dandelion", "Snowy Mountains", "Campfire By A Lake"]);
+LevelGuildTemp.addStyles(styles);
+LevelGuildTemp.addImage("gurl", 160, 40, 35, 35, true);
+LevelGuildTemp.addTextBlock("{{gname}}", 160, 22.4, 80, null, {style: "h4", fontSize: 10, lnHeight: 5});
+LevelGuildTemp.addStep({type: "fillStyle", data: "rgb(0, 106, 194)"});
+LevelGuildTemp.addStep((ctx, data) => {ctx.fillRect(20, 80, 1.3*data.global.percentageFull, 20);});
+LevelGuildTemp.addStep((ctx, data) => {ctx.fillRect(155, 80, 1.3*data.guild.percentageFull, 20);});
+LevelGuildTemp.addTextBlock("{{global.level}}", 125, 47.1, 35, null, {style: "level", fontSize: 20, lnHeight: 5});
+LevelGuildTemp.addTextBlock("{{guild.level}}", 260, 47.1, 35, null, {fontSize: 20, lnHeight: 5});
+LevelGuildTemp.addTextBlock("{{global.percentage}}% ({{global.currExp}}/{{global.req}})", 85, 81, 130, 18, {style: "h3-center", lnHeight: 3, fontSize: 12});
+LevelGuildTemp.addTextBlock("{{guild.percentage}}% ({{guild.currExp}}/{{guild.req}})", 220, 81, 130, 18, {lnHeight: 3, fontSize: 12});
+
+const LevelGlobalTemp = new Template("./assets/imgs/templates/level-global.png", 300, 120);
+LevelGlobalTemp.loadBackgrounds("./assets/imgs/backgrounds/level", ["Base", "Purple Checker", "B&W Spiral", "Waterfall", "Country Hill", "Stars", "Bamboo Forest", "Dandelion", "Snowy Mountains", "Campfire By A Lake"]);
+LevelGlobalTemp.addStyles(styles);
+LevelGlobalTemp.addStep({type: "fillStyle", data: "rgb(0, 106, 194)"});
+LevelGlobalTemp.addStep((ctx, data) => {ctx.fillRect(20, 80, 1.3*data.global.percentageFull, 20);});
+LevelGlobalTemp.addTextBlock("{{global.level}}", 125, 47.1, 35, null, {style: "level", fontSize: 20, lnHeight: 5});
+LevelGlobalTemp.addTextBlock("{{global.percentage}}% ({{global.currExp}}/{{global.req}})", 85, 81, 130, 18, {style: "h3-center", lnHeight: 3, fontSize: 12});
+
 module.exports = {
     Canvas,
-    ProfileTemp
+    ProfileTemp,
+    LevelGuildTemp,
+    LevelGlobalTemp
 };
