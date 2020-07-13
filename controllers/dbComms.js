@@ -12,6 +12,18 @@ pg.schema.hasTable("comms").then(exists => {
     }
 });
 
+let upsertCommand = async function (path, nodeid, data = {name: "", description: "", permissions: [], arguments: [], aliases: [], tags: [], nsfw: false, executable: false, haschildren: false}) {
+    let res = await pg.from("comms").select(["id"]).where({path, nodeid});
+    let extra = JSON.stringify(data);
+    if(Array.isArray(res) && res.length) {
+        if(JSON.stringify(res[0].extra) !== extra)
+            res = await pg("comms").where({id: res[0].id}).update({extra}, ["id"]);
+    } else
+        res = await pg("comms").returning(["id"]).insert({path, nodeid, extra: JSON.stringify(extra)});
+
+    return Array.isArray(res) && res.length ? {success: true, data: res[0].id} : {success: false};
+};
+
 let isCommandStored = async function(path, nodeid) {
     let res = await pg.from("comms").select(["id"]).where({path, nodeid});
     return res.length ? res[0].id : false;
@@ -23,7 +35,7 @@ let addCommand = async function(path, nodeid, extra) {
     return Array.isArray(res) && res.length ? res[0].id : false;
 };
 
-let UpdateCommand = async function(id, data = {name: "", description: "", permissions: [], arguments: [], aliases: [], tags: [], nsfw: false, executable: false}) {
+let UpdateCommand = async function(id, data = {name: "", description: "", permissions: [], arguments: [], aliases: [], tags: [], nsfw: false, executable: false, haschildren: false}) {
     let res = await pg.from("comms").select().where({id});
     let extra = JSON.stringify(data);
     if(res[0] && JSON.stringify(res[0].extra) !== extra) {
@@ -35,5 +47,6 @@ let UpdateCommand = async function(id, data = {name: "", description: "", permis
 module.exports = {
     isCommandStored,
     addCommand,
-    UpdateCommand
+    UpdateCommand,
+    upsertCommand
 };

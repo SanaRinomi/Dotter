@@ -165,6 +165,7 @@ const bkstyles = [
 class Template {
     constructor(templateDir, width = 300, height = 300) {
         this._backgrounds = new Map();
+        this._bkgAvailable = false;
         this._template = null;
         this._steps = [];
         this._styles = new Map();
@@ -244,7 +245,7 @@ class Template {
         const canvas = Canvas.createCanvas(this._width, this._height);
         const ctx = canvas.getContext("2d");
 
-        ctx.drawImage(data.bkgnd ? this._backgrounds.get(data.bkgnd) : this._backgrounds.values[0], 0, 0);
+        if(this._bkgAvailable) ctx.drawImage(data.bkgnd ? this._backgrounds.get(data.bkgnd) : this._backgrounds.values[0], 0, 0);
         ctx.drawImage(this._template, 0, 0);
 
         for (let i = 0; i < this._steps.length; i++) {
@@ -294,6 +295,7 @@ class Template {
     }
 
     loadBackgrounds(path, arr, fileType = "png") {
+        this._bkgAvailable = true;
         arr.forEach(v => {
             let imgName, ft = fileType, p = path;
             if(typeof v === "string")
@@ -447,9 +449,15 @@ LevelGlobalTemp.addStep((ctx, data) => {ctx.fillRect(20, 80, 1.3*data.global.per
 LevelGlobalTemp.addTextBlock("{{global.level}}", 125, 47.1, 35, null, {style: "level", fontSize: 20, lnHeight: 5});
 LevelGlobalTemp.addTextBlock("{{global.percentage}}% ({{global.currExp}}/{{global.req}})", 85, 81, 130, 18, {style: "h3-center", lnHeight: 3, fontSize: 12});
 
+const LevelUpTemp = new Template("./assets/imgs/templates/level-up.png", 75, 100);
+LevelUpTemp.addStyles(styles);
+LevelUpTemp.addImage("aurl", 12.5, 10, 50, 50, true);
+LevelUpTemp.addTextBlock("{{level}}", 37.5, 70, 50, null, {style: "level", fontSize: 20, lnHeight: 5});
+
 module.exports = {
     Canvas,
     ProfileTemp,
     LevelGuildTemp,
-    LevelGlobalTemp
+    LevelGlobalTemp,
+    LevelUpTemp
 };

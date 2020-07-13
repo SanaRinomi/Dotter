@@ -1,6 +1,9 @@
 const commonFilter = require("../other/swearWords");
 const emojis = require("emoji-regex")();
 const Profile = require("../classes/Profile");
+const {LevelUpTemp} = require("./canv");
+const {MessageAttachment} = require("discord.js");
+const moment = require("moment");
 
 let FilteredMessages = new Map();
 
@@ -65,7 +68,9 @@ module.exports = (discordCli) => {
         if(!msg.author.bot && !msg.system)
             Profile.fetch(msg.author.id).then(v => {
                 v.guild_levels[0];
-                v.messageExp(msg, (lvl) => {if(msg.guild.id === "561905459439599616") msg.reply(`You're now level ${lvl}`);});
+                v.messageExp(msg, async (lvl) => {
+                    msg.channel.send(null, new MessageAttachment(await LevelUpTemp.generate({level: lvl, aurl: msg.author.avatarURL({format: "png"})}), `level-up-${msg.author.tag}.png`));
+                });
                 if(v.username !== msg.author.username) {
                     v.username = msg.author.username;
                     v.profileUpdate();
@@ -129,10 +134,16 @@ module.exports = (discordCli) => {
     });
     discordCli.on("messageDelete", msg => {
         if(msg.author.bot) return;
+        // Time related things
+        let deleted = moment();
+        let posted = moment(msg.createdAt);
+
         let attachments = msg.attachments.size ? {name: "Attachments", value: msg.attachments.map(v => {return v.proxyURL;}).join("\n")} : {name: "Attachments", value: "\`None\`"};
         let reason = FilteredMessages.get(msg.id) ? {name: "Reason", value: FilteredMessages.get(msg.id)} : {name: "Reason", value: "\`None\`"};
         let message = /\S/.test(msg.cleanContent) ? {name: "Message", value: msg.cleanContent} : {name: "Message", value: "\`None\`"};
+        
+        let time_live = {name: "Time Live", value: `${posted.to(deleted, true)} (Created on: \`${posted.format("DD MMM YYYY, HH:mm Z")}\` | Deleted on: \`${deleted.format("DD MMM YYYY, HH:mm Z")}\`)`};
         FilteredMessages.delete(msg.id);
-        DLog.LogEvent(msg.guild, {desc: `A message by \`${msg.author.tag}\` (ID: \`${msg.author.id}\`) was deleted.`, fields: [message, attachments, reason]}, EVENTS.MESSAGE_DELETED);
+        DLog.LogEvent(msg.guild, {desc: `A message by \`${msg.author.tag}\` (ID: \`${msg.author.id}\`) was deleted.`, fields: [message, attachments, reason, time_live]}, EVENTS.MESSAGE_DELETED);
     });
 };

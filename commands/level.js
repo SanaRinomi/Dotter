@@ -59,7 +59,7 @@ const LevelGlobalComm = new CommandNode("global", async (cli, command, msg) => {
     const mention = msg.guild ? msg.mentions.members.first() : null;
     let user = msg.author;
     if(mention) user = mention.user;
-    else msg.channel.send(null, new MessageAttachment(await getLevelGlobal(user.id), `level-${user.tag}-global.png`));
+    msg.channel.send(null, new MessageAttachment(await getLevelGlobal(user.id), `level-${user.tag}-global.png`));
 }, {
     desc: "Get your or another person's global level",
     args: [{type: "user", name: "target"}]

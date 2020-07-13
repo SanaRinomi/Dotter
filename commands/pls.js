@@ -47,7 +47,7 @@ const PlsNSFWGroup = new CommandNode("nsfw", async (cli, command, msg) => {
 
 // Normal Commands
 const Baka = new CommandNode("baka", async (cli, command, msg) => {
-    let mention = msg.mentions.members.first();
+    let mention = msg.mentions.members ? msg.mentions.members.first() : null;
 	let img = (await neko.sfw.baka()).url;
 	if (!mention) {
 		sendGif(msg, img);
@@ -79,7 +79,7 @@ const Holo = new CommandNode("holo", async function(cli, command, msg) {
 
 const Hug = new CommandNode("hug", async function(cli, command, msg) {
 	let img = (await neko.sfw.cuddle()).url,
-		mention = msg.mentions.members.first();
+		mention = msg.mentions.members ? msg.mentions.members.first() : null;
 	if (!mention) {
 		sendGif(msg, img, `${cli.discordCli.user} cuddled ${msg.author}~! <:peepoHuggy:582609341572448284>`);
 	} else if (mention.id === msg.author.id) {
@@ -104,7 +104,7 @@ const Kemonomimi = new CommandNode("kemonomimi", async function(cli, command, ms
 
 const Kiss = new CommandNode("kiss", async function(cli, command, msg) {
 	let img = (await neko.sfw.kiss()).url,
-		mention = msg.mentions.members.first();
+		mention = msg.mentions.members ? msg.mentions.members.first() : null;
 	if (!mention) {
 		sendGif(msg, img, `${cli.discordCli.user} kissed ${msg.author}! ❤`);
 	} else if(mention.id === cli.discordCli.user.id) {
@@ -154,7 +154,7 @@ const NekoGif = new CommandNode("gif", async function(cli, command, msg) {
 
 const Pat = new CommandNode("pat", async function(cli, command, msg) {
 	let img = (await neko.sfw.pat()).url,
-		mention = msg.mentions.members.first();
+		mention = msg.mentions.members ? msg.mentions.members.first() : null;
 	if (!mention) {
 		sendGif(msg, img, `${cli.discordCli.user} patted ${msg.author} on the head~!`);
 	} else if(mention.id === cli.discordCli.user.id) {
@@ -173,7 +173,7 @@ const Pat = new CommandNode("pat", async function(cli, command, msg) {
 
 const Poke = new CommandNode("poke", async function(cli, command, msg) {
 	let img = (await neko.sfw.poke()).url,
-		mention = msg.mentions.members.first();
+		mention = msg.mentions.members ? msg.mentions.members.first() : null;
 	if (!mention || (mention && mention.id === msg.author.id)) {
 		sendGif(msg, img, `${msg.author} poked themselves for some strange reason...`);
 	} else if(mention.id === cli.discordCli.user.id) {
@@ -189,7 +189,7 @@ const Poke = new CommandNode("poke", async function(cli, command, msg) {
 });
 
 const Slap = new CommandNode("slap", async function(cli, command, msg) {
-	let mention = msg.mentions.members.first();
+	let mention = msg.mentions.members ? msg.mentions.members.first() : null;
 	let img = (await neko.sfw.slap()).url;
 	if (!mention) {
 		let rnd = Math.round(Math.random()*(userq.slap.length-1));
@@ -207,7 +207,7 @@ const Slap = new CommandNode("slap", async function(cli, command, msg) {
 
 const Smug = new CommandNode("smug", async function(cli, command, msg) {
 	let img = (await neko.sfw.smug()).url,
-		mention = msg.mentions.members.first();
+		mention = msg.mentions.members ? msg.mentions.members.first() : null;
 	if (!mention) {
 		sendGif(msg, img);
 	} else if (mention.id === msg.author.id) {
@@ -263,7 +263,7 @@ const Tenor = new CommandNode("tenor", async function(cli, command, msg) {
 
 const Tickle = new CommandNode("tickle", async function(cli, command, msg) {
 	let img = (await neko.sfw.tickle()).url,
-		mention = msg.mentions.members.first();
+		mention = msg.mentions.members ? msg.mentions.members.first() : null;
 	if (!mention) {
 		sendGif(msg, img, `${msg.client.user} tickled ${msg.author}!`);
 	} else if (mention.id === msg.author.id) {
