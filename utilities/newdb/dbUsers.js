@@ -88,9 +88,9 @@ let userConvert = async function(id, data, leveling, table = "users") {
     return await upsertUser(id, profile, cosmetics, limits, level, table);
 };
 
-let guserConvert = async function(user, guild, leveling, table = "guildusers", oldtable) {
+let guserConvert = async function(user, guild, leveling, logs = [], table = "guildusers", oldtable) {
     let level = leveling ? leveling : new SimpleLevels().toJSON();
-    return await upsertGuildUser(user, guild, 0, [], [], level, table, oldtable);
+    return await upsertGuildUser(user, guild, 0, [], logs, level, table, oldtable);
 };
 
 module.exports = {

@@ -1,5 +1,5 @@
-const pg = require("./dbKnexConf");
-const {EVENTS} = require("./constants");
+const pg = require("../dbKnexConf");
+const {EVENTS} = require("../../controllers/constants");
 
 pg.schema.hasTable("logs").then(exists => {
     if(!exists) {
@@ -34,14 +34,14 @@ let addEvent = async function(user, guild, type, enforcer = null, reason = null,
 let getEvents = async function(user, guild) {
     let res = await pg.from("logs").select(["enforcer", "type", "reason", "created_at", "extra"]).where({user, guild});
     if(res.length && res[0])
-        return {id: user, success: true, data: res[0]};
+        return {id: user, success: true, data: res};
     else return {id: user, success: false};
 };
 
 let getOffenses = async function(user, guild) {
     let res = await pg.from("logs").select(["enforcer", "type", "reason", "created_at", "extra"]).where({user, guild}).whereIn("type", [EVENTS.USER_BANNED, EVENTS.USER_UNBANNED, EVENTS.USER_KICKED, EVENTS.MUTED, EVENTS.UNMUTED, EVENTS.WARNS]);
     if(res.length && res[0])
-        return {id: user, success: true, data: res[0]};
+        return {id: user, success: true, data: res};
     else return {id: user, success: false};
 };
 
