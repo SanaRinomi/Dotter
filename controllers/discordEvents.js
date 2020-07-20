@@ -69,7 +69,7 @@ module.exports = (discordCli) => {
             Profile.fetch(msg.author.id).then(v => {
                 v.guild_levels[0];
                 v.messageExp(msg, async (lvl) => {
-                    msg.channel.send(null, new MessageAttachment(await LevelUpTemp.generate({level: lvl, aurl: msg.author.avatarURL({format: "png"})}), `level-up-${msg.author.tag}.png`));
+                    msg.channel.send(null, new MessageAttachment(await LevelUpTemp.generate({bkgnd: v.background, level: lvl, uname: msg.author.username, aurl: msg.author.avatarURL({format: "png"})}), `level-up-${msg.author.tag}.png`));
                 });
                 if(v.username !== msg.author.username) {
                     v.username = msg.author.username;

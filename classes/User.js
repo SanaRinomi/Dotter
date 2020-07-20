@@ -11,7 +11,7 @@ class GuildUser extends DBObject {
 
         this._permissions = data ? data.permissions : 0;
         this._roles = data ? data.roles : [];
-        this._events = [];
+        this._logs = [];
         this._level = SimpleLevels.fromJSON({exp: 0, level: 0, ...data.level});
         logs.getOffenses(user.id, guild.id).then(v => {
             if(v.success) {
@@ -37,7 +37,7 @@ class GuildUser extends DBObject {
             level: this._user._level._currLvl
         };
 
-        return await LevelGlobalTemp.generate({bkgnd: this._user._cosmetics.currBackground, guild, global, gname: guildName, gurl: guildAvatar});
+        return await LevelGuildTemp.generate({bkgnd: this._user._cosmetics.currBackground, guild, global, gname: guildName, gurl: guildAvatar});
     }
 }
 

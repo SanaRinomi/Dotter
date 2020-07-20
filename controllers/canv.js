@@ -62,6 +62,7 @@ Canvas.registerFont("./assets/fonts/PTSans-Bold.ttf", {family: "PT Sans", weight
 Canvas.registerFont("./assets/fonts/PTSans-BoldItalic.ttf", {family: "PT Sans", weight: "bold", style: "italic"});
 
 const fonts = "PT Sans, Noto Emoji, Whitney, Noto Sans JP, Noto Sans KR, Noto Sans TC, Noto Sans SC, Noto Sans HK";
+const backgrounds = ["Base", "Purple Checker", "B&W Spiral", "Waterfall", "Country Hill", "Stars", "Bamboo Forest", "Dandelion", "Snowy Mountains", "Campfire By A Lake"];
 const styles = [
     {
         id: "default",
@@ -116,7 +117,14 @@ const styles = [
             font: `12px ${fonts}`,
             textAlign: "center"
         }
-    }
+    },
+    {
+        id: "h1-center",
+        data: {
+            font: `bold 16px ${fonts}`,
+            textAlign: "center"
+        }
+    },
 ];
 
 const bkstyles = [
@@ -414,7 +422,7 @@ class Template {
 // ProfileTemp.addTextBlock("{{level.percentage}}% ({{level.currExp}}/{{level.req}})", 192.5, 140, 145, 15, {style: "tinyText", lnHeight: 3, fontSize: 9});
 
 const ProfileTemp = new Template("./assets/imgs/templates/profile2.png");
-ProfileTemp.loadBackgrounds("./assets/imgs/backgrounds/profile", ["Base", "Purple Checker", "B&W Spiral", "Waterfall", "Country Hill", "Stars", "Bamboo Forest", "Dandelion", "Snowy Mountains", "Campfire By A Lake"]);
+ProfileTemp.loadBackgrounds("./assets/imgs/backgrounds/profile", backgrounds);
 ProfileTemp.addStyles(styles);
 ProfileTemp.addImage("aurl", 25, 45, 75, 75, true);
 ProfileTemp.addTextBlock("{{uname}}", 110, 90, 165, null, {style: "h1", fontSize: 16, lnHeight: 5});
@@ -429,7 +437,7 @@ ProfileTemp.addTextBlock("{{level.percentage}}% ({{level.currExp}}/{{level.req}}
 
 
 const LevelGuildTemp = new Template("./assets/imgs/templates/level-guild.png", 300, 120);
-LevelGuildTemp.loadBackgrounds("./assets/imgs/backgrounds/level", ["Base", "Purple Checker", "B&W Spiral", "Waterfall", "Country Hill", "Stars", "Bamboo Forest", "Dandelion", "Snowy Mountains", "Campfire By A Lake"]);
+LevelGuildTemp.loadBackgrounds("./assets/imgs/backgrounds/level", backgrounds);
 LevelGuildTemp.addStyles(styles);
 LevelGuildTemp.addImage("gurl", 160, 40, 35, 35, true);
 LevelGuildTemp.addTextBlock("{{gname}}", 160, 22.4, 80, null, {style: "h4", fontSize: 10, lnHeight: 5});
@@ -442,17 +450,25 @@ LevelGuildTemp.addTextBlock("{{global.percentage}}% ({{global.currExp}}/{{global
 LevelGuildTemp.addTextBlock("{{guild.percentage}}% ({{guild.currExp}}/{{guild.req}})", 220, 81, 130, 18, {lnHeight: 3, fontSize: 12});
 
 const LevelGlobalTemp = new Template("./assets/imgs/templates/level-global.png", 300, 120);
-LevelGlobalTemp.loadBackgrounds("./assets/imgs/backgrounds/level", ["Base", "Purple Checker", "B&W Spiral", "Waterfall", "Country Hill", "Stars", "Bamboo Forest", "Dandelion", "Snowy Mountains", "Campfire By A Lake"]);
+LevelGlobalTemp.loadBackgrounds("./assets/imgs/backgrounds/level", backgrounds);
 LevelGlobalTemp.addStyles(styles);
 LevelGlobalTemp.addStep({type: "fillStyle", data: "rgb(0, 106, 194)"});
 LevelGlobalTemp.addStep((ctx, data) => {ctx.fillRect(20, 80, 1.3*data.global.percentageFull, 20);});
 LevelGlobalTemp.addTextBlock("{{global.level}}", 125, 47.1, 35, null, {style: "level", fontSize: 20, lnHeight: 5});
 LevelGlobalTemp.addTextBlock("{{global.percentage}}% ({{global.currExp}}/{{global.req}})", 85, 81, 130, 18, {style: "h3-center", lnHeight: 3, fontSize: 12});
 
-const LevelUpTemp = new Template("./assets/imgs/templates/level-up.png", 75, 100);
+// const LevelUpTemp = new Template("./assets/imgs/templates/old_level-up.png", 75, 100);
+// LevelUpTemp.addStyles(styles);
+// LevelUpTemp.addImage("aurl", 12.5, 10, 50, 50, true);
+// LevelUpTemp.addTextBlock("{{level}}", 37.5, 70, 50, null, {style: "level", fontSize: 20, lnHeight: 5});
+
+const LevelUpTemp = new Template("./assets/imgs/templates/level-up.png", 300, 100);
+LevelUpTemp.loadBackgrounds("./assets/imgs/backgrounds/level-up", backgrounds);
 LevelUpTemp.addStyles(styles);
-LevelUpTemp.addImage("aurl", 12.5, 10, 50, 50, true);
-LevelUpTemp.addTextBlock("{{level}}", 37.5, 70, 50, null, {style: "level", fontSize: 20, lnHeight: 5});
+LevelUpTemp.addImage("aurl", 10, 10, 80, 80, true);
+LevelUpTemp.addTextBlock("{{uname}}", 147.5, 27.3, 105, null, {style: "h1-center", fontSize: 16, lnHeight: 5});
+LevelUpTemp.addTextBlock("{{level}}", 147.5, 60, 50, null, {style: "level", fontSize: 20, lnHeight: 5});
+LevelUpTemp.addImage("./assets/imgs/etc/LevelUpBar.png", 85, 7, 125, 20);
 
 module.exports = {
     Canvas,

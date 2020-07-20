@@ -81,7 +81,7 @@ function registerNodes() {
     for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
 
-        if(node.level > 1) commands.isCommandStored(node.path, node.n.ID).then(v => {
+        if(node.level > 1 && !node.n.Ignored) commands.isCommandStored(node.path, node.n.ID).then(v => {
             let executable = node.n.Type === "command";
             let nodeData = {
                 name: node.n.Name,

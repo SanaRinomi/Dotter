@@ -1,4 +1,4 @@
-const pg = require("./dbKnexConf");
+const pg = require("../dbKnexConf");
 
 pg.schema.hasTable("levels").then(exists => {
     if(!exists) {
@@ -33,6 +33,13 @@ let getLevel = async function(user, guild) {
     else return {id: user, success: false};
 };
 
+let getAllLevels = async function() {
+    let res = await pg.from("levels").select();
+    if(res.length && res[0])
+        return {success: true, data: res};
+    else return {success: false};
+};
+
 let getGuildsLevels = async function(user) {
     let res = await pg.from("levels").select(["guild", "leveling"]).where({user});
     if(res.length && res[0])
@@ -60,6 +67,7 @@ module.exports = {
     getGuildsStored,
     addLevel,
     getLevel,
+    getAllLevels,
     getGuildsLevels,
     getUsersLevels,
     updateLevel
