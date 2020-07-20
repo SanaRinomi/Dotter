@@ -16,15 +16,15 @@
   "dependencies": {
     "canvas": "^2.6.1",
     "emoji-regex": "^9.0.0",
-    "framecord": "^1.2.1",
+    "framecord": "^1.2.2",
     "fs-extra": "^9.0.1",
-    "knex": "^0.21.1",
+    "knex": "^0.21.2",
     "moment": "^2.27.0",
     "mustache": "^4.0.1",
     "nekos.life": "^2.0.7",
     "node-fetch": "^2.6.0",
     "performance-now": "^2.1.0",
-    "pg": "^8.2.1",
-    "systeminformation": "^4.26.9"
+    "pg": "^8.3.0",
+    "systeminformation": "^4.26.10"
   }
 }
