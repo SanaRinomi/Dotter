@@ -2,61 +2,47 @@ const pg = require("../dbKnexConf");
 const moment = require("moment");
 const {SimpleLevels} = require("../../classes/Level");
 
-let remakeUserTable = async function(table = "users") {
-    if(await pg.schema.hasTable(table))
-        await pg.schema.dropTable(table);
-    await pg.schema.createTable(table, ntable => {
-        ntable.bigInteger("id").unsigned().primary();
-        ntable.json("profile");
-        ntable.json("cosmetics");
-        ntable.json("limits");
-        ntable.json("level");
-    });
+const DBTable = require("./dbTable");
 
-    return true;
-};
-
-let remakeGUserTable = async function(table = "guildusers") {
-    if(await pg.schema.hasTable(table))
-        await pg.schema.dropTable(table);
-    await pg.schema.createTable(table, ntable => {
-        ntable.bigInteger("user").unsigned();
-        ntable.bigInteger("guild").unsigned();
-        ntable.integer("permissions").unsigned();
-        ntable.json("roles");
-        ntable.json("logs");
-        ntable.json("level");
-        ntable.primary(["user", "guild"]);
-    });
-
-    return true;
-};
-
-let upsertUser = async function(id, profile, cosmetics, limits, level, table = "users") {
-    let res = await pg.from(table).select().where({id});
-    if(res.length && res[0]) {
-        res = await pg(table).where({id}).update({profile: JSON.stringify(profile), cosmetics: JSON.stringify(cosmetics), limits: JSON.stringify(limits), level: JSON.stringify(level)}, ["id"]);
-    } else {
-        res = await pg(table).returning(["id"]).insert({id, profile: JSON.stringify(profile), cosmetics: JSON.stringify(cosmetics), limits: JSON.stringify(limits), level: JSON.stringify(level)});
+class UserTable extends DBTable {
+    constructor(tablename = "users") {
+        super(tablename, table => {
+            table.bigInteger("id").unsigned().primary();
+            table.json("profile");
+            table.json("cosmetics");
+            table.json("limits");
+            table.json("level");
+        });
     }
 
-    if(Array.isArray(res) && res.length)
-        return true;
-    else return false;
-};
+    async upsert(id, profile, cosmetics, limits, level) {
+        return super.upsert(id, {profile, cosmetics, limits, level});
+    }
+}
 
-let upsertGuildUser = async function(user, guild, permissions, roles, logs, level, table = "guildusers") {
-    let res = await pg.from(table).select().where({user, guild});
-    if(res.length && res[0]) {
-        res = await pg(table).where({user, guild}).update({permissions: JSON.stringify(permissions), roles: JSON.stringify(roles), logs: JSON.stringify(logs), level: JSON.stringify(level)}, ["user", "guild"]);
-    } else {
-        res = await pg(table).returning(["user", "guild"]).insert({user, guild, permissions: JSON.stringify(permissions), roles: JSON.stringify(roles), logs: JSON.stringify(logs), level: JSON.stringify(level)});
+class GuildUserTable extends DBTable {
+    constructor(tablename = "guildusers") {
+        super(tablename, table => {
+            table.bigInteger("user").unsigned();
+            table.bigInteger("guild").unsigned();
+            table.integer("permissions").unsigned();
+            table.json("roles");
+            table.json("logs");
+            table.json("level");
+            table.primary(["user", "guild"]);
+        });
     }
 
-    if(Array.isArray(res) && res.length)
-        return true;
-    else return false;
-};
+    async upsert(user, guild, permissions, roles, logs, level) {
+        return super.upsert({user, guild}, {permissions, roles, logs, level});
+    }
+
+    async get(user, guild) {
+        return super.get({user, guild});
+    }
+}
+
+const UserData = new UserTable(), GuildUserData = new GuildUserTable();
 
 let userConvert = async function(id, data, leveling, table = "users") {
     let profile = data ? {
@@ -85,19 +71,21 @@ let userConvert = async function(id, data, leveling, table = "users") {
     };
 
     let level = leveling ? leveling : new SimpleLevels().toJSON();
-    return await upsertUser(id, profile, cosmetics, limits, level, table);
+    return await UserData.upsert(id, profile, cosmetics, limits, level, table);
 };
 
-let guserConvert = async function(user, guild, leveling, logs = [], table = "guildusers", oldtable) {
+let guserConvert = async function(user, guild, leveling, logs = [], table = "guildusers") {
     let level = leveling ? leveling : new SimpleLevels().toJSON();
-    return await upsertGuildUser(user, guild, 0, [], logs, level, table, oldtable);
+    return await GuildUserData.upsert(user, guild, 0, [], logs, level, table);
 };
 
 module.exports = {
-    remakeUserTable,
-    remakeGUserTable,
-    upsertUser,
-    upsertGuildUser,
     userConvert,
-    guserConvert
+    guserConvert,
+    GuildUserData,
+    UserData,
+    classes: {
+        UserTable,
+        GuildUserTable
+    }
 };

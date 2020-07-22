@@ -17,6 +17,13 @@ let isGuildStored = async function(id) {
     return res.length ? true : false;
 };
 
+let getGuilds = async function() {
+    let res = await pg.from("guilds").select();
+    if(res.length && res[0])
+        return {success: true, data: res};
+    else return {success: false};
+};
+
 let getAnnouncements = async function(id) {
     let res = await pg.from("guilds").select(["announcements"]).where({id});
     if(res.length && res[0])
@@ -106,5 +113,6 @@ module.exports = {
     updateAnnouncements,
     updateWelcome,
     updateLogs,
-    updateFilters
+    updateFilters,
+    getGuilds
 };

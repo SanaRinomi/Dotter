@@ -1,4 +1,4 @@
-const pg = require("./dbKnexConf");
+const pg = require("../dbKnexConf");
 
 pg.schema.hasTable("roles").then(exists => {
     if(!exists) {
