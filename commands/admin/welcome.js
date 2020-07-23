@@ -1,27 +1,18 @@
 const {Nodes: {CommandNode, AliasNode}, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    DB = require("../../controllers/dbMain");
-
-function welcomeData(data) {
-    if(!data)
-        data = {
-            enabled: false,
-            message: null,
-            channel: null,
-            image: false
-        };
-    return data;
-}
+    {GuildConfig} = require("../../classes/Guild");
 
 const Welcome = new CommandNode("welcome", async (cli, command, msg) => {
-    let welcome = await DB.guild.getWelcome(msg.guild.id);
+    let config = await GuildConfig.fetch(msg.guild.id);
 
-    if(welcome.success)
+    if(config) {
+        config = config.Welcome;
         msg.channel.send(`\`\`\`md
 # Welcome Settings
-* Welcome Channel: ${welcome.data.channel ? msg.guild.channels.cache.get(welcome.data.channel).name : "Nothing"}        
-* Welcome Message: ${welcome.data.message ? welcome.data.message : "Nothing"}        
+* Welcome Channel: ${config.channel ? msg.guild.channels.cache.get(config.channel).name : "Nothing"}        
+* Welcome Message: ${config.message ? config.message : "Nothing"}        
 \`\`\``);
+    }
     else msg.channel.send("Failed to get any data...!");
 }, {
     name: "Welcome Message",
@@ -31,15 +22,11 @@ const Welcome = new CommandNode("welcome", async (cli, command, msg) => {
 
 const welcomeEnable = new CommandNode("enable", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getWelcome(msg.guild.id).then(welcome => {
-            let data = welcomeData(welcome.data);
-            data.enabled = comm.Args[0].Value;
-
-            DB.guild.updateWelcome(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Welcome message set!");
-                else obj.Message.edit("Welcome message failed to set!");
-            });
+        let config = await GuildConfig.fetch(msg.guild.id);
+        config.Logs = {enabled:comm.Args[0].Value};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Welcome enable set!");
+            else obj.Message.edit("Welcome enable failed to set!");
         });
     });
     
@@ -53,15 +40,11 @@ const welcomeEnable = new CommandNode("enable", (cli, comm, msg) => {
 
 const welcomeImage = new CommandNode("image", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getWelcome(msg.guild.id).then(welcome => {
-            let data = welcomeData(welcome.data);
-            data.image = comm.Args[0].Value;
-
-            DB.guild.updateWelcome(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Welcome image set!");
-                else obj.Message.edit("Welcome image failed to set!");
-            });
+        let config = await GuildConfig.fetch(msg.guild.id);
+        config.Logs = {image:comm.Args[0].Value};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Welcome image set!");
+            else obj.Message.edit("Welcome image failed to set!");
         });
     });
     
@@ -75,15 +58,11 @@ const welcomeImage = new CommandNode("image", (cli, comm, msg) => {
 
 const welcomeMessage = new CommandNode("message", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getWelcome(msg.guild.id).then(welcome => {
-            let data = welcomeData(welcome.data);
-            data.message = comm.Args[0].Value;
-
-            DB.guild.updateWelcome(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Welcome message set!");
-                else obj.Message.edit("Welcome message failed to set!");
-            });
+        let config = await GuildConfig.fetch(msg.guild.id);
+        config.Logs = {message:comm.Args[0].Value};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Welcome message set!");
+            else obj.Message.edit("Welcome message failed to set!");
         });
     });
     
@@ -99,15 +78,11 @@ const welcomeChannel = new CommandNode("channel", (cli, comm, msg) => {
     let channel = msg.mentions.channels.first();
 
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getWelcome(msg.guild.id).then(welcome => {
-            let data = welcomeData(welcome.data);
-            data.channel = channel.id;
-
-            DB.guild.updateWelcome(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Welcome channel set!");
-                else obj.Message.edit("Welcome channel failed to set!");
-            });
+        let config = await GuildConfig.fetch(msg.guild.id);
+        config.Logs = {channel: channel.id};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Welcome channel set!");
+            else obj.Message.edit("Welcome channel failed to set!");
         });
     });
     

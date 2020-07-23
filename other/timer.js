@@ -1,5 +1,5 @@
 const userData = require("./discordUserData");
-const {timed, roles} = require("../controllers/dbMain");
+const {EventData} = require("../controllers/dbMain");
 const moment = require("moment");
 const {MessageEmbed} = require("discord.js"),
     {TIMED_EVENTS, EVENTS, PRIORITIES, ROLE_TYPES} = require("../controllers/constants"),
@@ -26,12 +26,12 @@ async function _15seconds() {
 }
 
 async function getAllValues() {
-    const vals = await timed.getAllCompletedValues();
+    const vals = await EventData.getCompleted();
     if(vals.success) {
-        vals.values.forEach(v => {
+        vals.data.forEach(v => {
             const guild = client.discordCli.guilds.resolve(v.guild);
             if(!guild) {
-                timed.removeValue(v.id, v.user);
+                EventData.del({id: v.id, user: v.user});
                 return;
             }
 
@@ -47,13 +47,13 @@ async function getAllValues() {
                         embed.setAuthor(`Reminder for ${member.user.username}`, member.user.displayAvatarURL({dynamic: true}));
                         embed.setFooter(`ID: ${v.id} | Set on: ${moment(v.created_at).format("DD MMM YYYY, HH:mm Z")}`);
                         channel.send(`${member}`, embed).then(() => {
-                            timed.removeValue(v.id, v.user);
+                            EventData.del({id: v.id, user: v.user});
                         });
                     } else {
                         let vv = attempts.get(v.id);
                         vv = vv ? vv : 0;
                         if(vv > 5) {
-                            timed.removeValue(v.id, v.user);
+                            EventData.del({id: v.id, user: v.user});
                             attempts.delete(v.id);
                         } else attempts.set(v.id, vv++);
                     }
@@ -62,13 +62,13 @@ async function getAllValues() {
                     channel = client.discordCli.channels.cache.get(v.extra.channel);
                     if(channel) {
                         channel.send(v.extra.message).then(() => {
-                            timed.removeValue(v.id, v.user);
+                            EventData.del({id: v.id, user: v.user});
                         });
                     } else {
                         let vv = attempts.get(v.id);
                         vv = vv ? vv : 0;
                         if(vv > 5) {
-                            timed.removeValue(v.id, v.user);
+                            EventData.del({id: v.id, user: v.user});
                             attempts.delete(v.id);
                         } else attempts.set(v.id, vv++);
                     }
@@ -76,17 +76,17 @@ async function getAllValues() {
                 case TIMED_EVENTS.BAN_LIMIT:
                     Unbanned.set(v.user, {...v.extra, time: {start: moment(v.created_at), end: moment(v.until)}});
                     guild.members.unban(v.user).then(vv => {
-                        timed.removeValue(v.id, v.user);
+                        EventData.del({id: v.id, user: v.user});
                     }).catch(err => {
                         Unbanned.delete(v.user);
                         if(err.message === "Unknown Ban")
                             DLog.LogEvent(guild, {desc: `Failed to unban user \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: `\`${err.message}\`, This error is most likely caused because you unbanned the user before their ban limit was reached. **This can be generally safely ignored**!`}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);
                         else DLog.LogEvent(guild, {desc: `Failed to unban user \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: err.message}, {name: "Event ID", value: v.id}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);
-                        timed.removeValue(v.id, v.user);
+                        EventData.del({id: v.id, user: v.user});
                     });
                     break;
                 case TIMED_EVENTS.MUTE_LIMIT:
-                    timed.removeValue(v.id, v.user);
+                    EventData.del({id: v.id, user: v.user});
                     roles.getValue(v.guild, ROLE_TYPES.MUTE_ROLE).then(val => {
                         if(!val.success) {
                             DLog.LogEvent(guild, {desc: `Failed to unmute \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: "Mute role has not been set."}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);

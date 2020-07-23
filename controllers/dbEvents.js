@@ -1,4 +1,4 @@
-const pg = require("../dbKnexConf");
+const pg = require("./dbKnexConf");
 const DBTable = require("./dbTable");
 const moment = require("moment");
 
@@ -13,6 +13,10 @@ class EventTable extends DBTable {
             table.datetime("until");
             table.json("extra").nullable();
         });
+    }
+
+    async upsert(id, roles, configs, extra = null) {
+        return super.upsert(id, {roles,configs,extra});
     }
 
     async getCompleted(id = null, data = null) {

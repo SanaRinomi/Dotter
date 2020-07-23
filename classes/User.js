@@ -1,6 +1,6 @@
 const DBObject = require("./DBObject");
 const {SimpleLevels} = require("./Level");
-const {logs} = require("../controllers/dbMain");
+const {GuildUserData, UserData} = require("../controllers/dbMain");
 const {LevelGuildTemp, LevelGlobalTemp, ProfileTemp} = require("../controllers/canv");
 const UserCache = new Map();
 
@@ -108,6 +108,20 @@ class User extends DBObject {
         };
 
         return await LevelGlobalTemp.generate({bkgnd: this._cosmetics.currBackground, global});
+    }
+
+    static get(id) {
+        return UserCache.get(id);
+    }
+
+    static async fetch(id) {
+        const cache = UserCache.get(id);
+        if(cache) return cache;
+
+        const res = await UserData.get(id);
+        if(res.success) {
+            return new User(id, res.data.profile, res.data.cosmetics, res.data.limits, res.data.level);
+        } else return new User(id);
     }
 
     static cache() {

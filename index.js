@@ -3,7 +3,7 @@ const {Client, Nodes: {DataNode, AliasNode}} = require("framecord"),
     path = require("path"),
     timer = require("./other/timer"),
     fs = require("fs"),
-    {commands} = require("./controllers/dbMain"),
+    {CommandData} = require("./controllers/dbMain"),
     {Nodes} = require("./controllers/cache"),
     cvs = require("./controllers/canv");
 
@@ -81,7 +81,7 @@ function registerNodes() {
     for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
 
-        if(node.level > 1 && !node.n.Ignored) commands.isCommandStored(node.path, node.n.ID).then(v => {
+        if(node.level > 1 && !node.n.Ignored) {
             let executable = node.n.Type === "command";
             let nodeData = {
                 name: node.n.Name,
@@ -93,13 +93,11 @@ function registerNodes() {
                 permissions: executable ? node.n.Permissions : [],
                 executable
             };
-            if(Number.isInteger(v)) {
-                node.n.dbID = v;
-                commands.UpdateCommand(v, nodeData);
-            } else commands.addCommand(node.path, node.n.ID, nodeData).then(vv => {
-                if(Number.isInteger(vv)) node.n.dbID = vv;
-            }).catch(err => {console.log(err.message);});
-        });
+
+            CommandData.upsert({path: node.path, nodeid: node.n.ID}, {extra: nodeData}).then(v => {
+                if(v.success) node.n.dbID = v.data[0].id;
+            });
+        };
 
         if(node.n.HasChildren)
             nodes.push(...node.n.Children.filter(v => v.Type !== "alias").map(v => {return {n:v, path: node.level > 2 ? `${node.path} ${node.n.ID}` : node.level ? node.path+node.n.ID : node.n.ID, level: node.level+1};}));

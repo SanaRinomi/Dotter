@@ -1,19 +1,6 @@
 const {Nodes: {CommandNode, AliasNode}, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    DB = require("../../controllers/dbMain");
-
-function filterData(data) {
-    if(!data)
-        data = {
-            enabled: false,
-            common: false,
-            words: [],
-            black_list_mode: true,
-            channel_list: [],
-            emoji_limit: 0
-        };
-    return data;
-}
+    {GuildConfig} = require("../../classes/Guild");
 
 function unique(arr) {
     var a = arr.concat();
@@ -28,16 +15,18 @@ function unique(arr) {
 };
 
 const Filter = new CommandNode("filter", async (cli, command, msg) => {
-    let filter = await DB.guild.getFilters(msg.guild.id);
-    if(filter.success && filter.data)
+    let config = await GuildConfig.fetch(msg.guild.id);
+    if(config) {
+        config = config.Filter;
         msg.channel.send(`\`\`\`md
 # Filter Settings
-* Filter Enabled? ${filter.data.enabled ? "Yes" : "No"}
-* Filter Common Swear Words? ${filter.data.common ? "Yes" : "No"}
-* Filtered Words: ${filter.data.words ? filter.data.words.join(", ") : "None"}
-* Emoji Limit: ${filter.data.emoji_limit ? filter.data.emoji_limit : "None"}
+* Filter Enabled? ${config.enabled ? "Yes" : "No"}
+* Filter Common Swear Words? ${config.common ? "Yes" : "No"}
+* Filtered Words: ${config.words ? config.words.join(", ") : "None"}
+* Emoji Limit: ${config.emoji_limit ? config.emoji_limit : "None"}
 \`\`\``);
-    else msg.channel.send("Failed to get any data...!");
+    }
+    else msg.channel.send("Failed to get config...!");
 }, {
     name: "Filters",
     desc: "Get filter settings",
@@ -46,20 +35,17 @@ const Filter = new CommandNode("filter", async (cli, command, msg) => {
 
 const filterCommon = new CommandNode("common", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getFilters(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Filters failed to retrieve data!");
-                return;
-            }
+        let config = await GuildConfig.fetch(msg.guild.id);
+        
+        if(config) {
+            obj.Message.edit("Failed to retrieve config...!");
+            return;
+        }
 
-            let data = filterData(welcome.data);
-            data.common = comm.Args[0].Value;
-
-            DB.guild.updateFilters(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Filters set!");
-                else obj.Message.edit("Filters failed to set!");
-            });
+        config.Filter = {common: comm.Args[0].Value};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Filters set!");
+            else obj.Message.edit("Filters failed to set!");
         });
     });
     
@@ -73,20 +59,17 @@ const filterCommon = new CommandNode("common", (cli, comm, msg) => {
 
 const filterEnable = new CommandNode("enable", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getFilters(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Filters failed to retrieve data!");
-                return;
-            }
+        let config = await GuildConfig.fetch(msg.guild.id);
+        
+        if(config) {
+            obj.Message.edit("Failed to retrieve config...!");
+            return;
+        }
 
-            let data = filterData(welcome.data);
-            data.enabled = comm.Args[0].Value;
-
-            DB.guild.updateFilters(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Filters set!");
-                else obj.Message.edit("Filters failed to set!");
-            });
+        config.Filter = {enabled: comm.Args[0].Value};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Filters set!");
+            else obj.Message.edit("Filters failed to set!");
         });
     });
     
@@ -100,20 +83,17 @@ const filterEnable = new CommandNode("enable", (cli, comm, msg) => {
 
 const filterEmoji = new CommandNode("emojis", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getFilters(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Filters failed to retrieve data!");
-                return;
-            }
+        let config = await GuildConfig.fetch(msg.guild.id);
+        
+        if(config) {
+            obj.Message.edit("Failed to retrieve config...!");
+            return;
+        }
 
-            let data = filterData(welcome.data);
-            data.emoji_limit = comm.Args[0].Value;
-
-            DB.guild.updateFilters(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Filters set!");
-                else obj.Message.edit("Filters failed to set!");
-            });
+        config.Filter = {emoji_limit: comm.Args[0].Value};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Filters set!");
+            else obj.Message.edit("Filters failed to set!");
         });
     });
     
@@ -126,13 +106,15 @@ const filterEmoji = new CommandNode("emojis", (cli, comm, msg) => {
 });
 
 const filterWords = new CommandNode("words", async (cli, command, msg) => {
-    let filter = await DB.guild.getFilters(msg.guild.id);
+    let config = await GuildConfig.fetch(msg.guild.id);
 
-    if(filter.success && filter.data && filter.data.words)
+    if(config) {
+        config = config.Filter;
         msg.channel.send(`\`\`\`md
 # Filter Words Settings
-* Filtering: ${filter.data.words ? filter.data.words.join(", ") : "None"}
+* Filtering: ${config.words && config.words[0] ? config.words.join(", ") : "None"}
 \`\`\``);
+    }
     else msg.channel.send("Failed to get any data...!");
 }, {
     name: "Word Filters",
@@ -143,20 +125,17 @@ const filterWords = new CommandNode("words", async (cli, command, msg) => {
 const filterWordsAdd = new CommandNode("add", (cli, comm, msg) => {
     let vals = comm.Args.map(v => v.Value);
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getFilters(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Filters failed to retrieve data!");
-                return;
-            }
+        let config = await GuildConfig.fetch(msg.guild.id);
+        
+        if(config) {
+            obj.Message.edit("Failed to retrieve config...!");
+            return;
+        }
 
-            let data = filterData(welcome.data);
-            data.words = unique([...data.words, ...vals.map(v => v.toLowerCase())]);
-
-            DB.guild.updateFilters(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Filters set!");
-                else obj.Message.edit("Filters failed to set!");
-            });
+        config.Filter = {words: unique([...data.words, ...vals.map(v => v.toLowerCase())])};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Filters set!");
+            else obj.Message.edit("Filters failed to set!");
         });
     });
     
@@ -171,22 +150,20 @@ const filterWordsAdd = new CommandNode("add", (cli, comm, msg) => {
 const filterWordsRemove = new CommandNode("remove", (cli, comm, msg) => {
     let vals = comm.Args.map(v => v.Value);
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getFilters(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Filters failed to retrieve data!");
-                return;
-            }
+        let config = await GuildConfig.fetch(msg.guild.id);
+        
+        if(config) {
+            obj.Message.edit("Failed to retrieve config...!");
+            return;
+        }
 
-            let data = filterData(welcome.data);
-            data.words = data.words.filter(v => {
-                return !vals.includes(v);
-            });
+        config.Filter = {words: data.words.filter(v => {
+            return !vals.includes(v);
+        })};
 
-            DB.guild.updateFilters(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Filters set!");
-                else obj.Message.edit("Filters failed to set!");
-            });
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Filters set!");
+            else obj.Message.edit("Filters failed to set!");
         });
     });
     
@@ -200,20 +177,17 @@ const filterWordsRemove = new CommandNode("remove", (cli, comm, msg) => {
 
 const filterWordsReset = new CommandNode("reset", (cli, comm, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
-        DB.guild.getFilters(msg.guild.id).then(welcome => {
-            if(!welcome.success) {
-                obj.Message.edit("Filters failed to retrieve data!");
-                return;
-            }
+        let config = await GuildConfig.fetch(msg.guild.id);
+        
+        if(config) {
+            obj.Message.edit("Failed to retrieve config...!");
+            return;
+        }
 
-            let data = filterData(welcome.data);
-            data.words = [];
-
-            DB.guild.updateFilters(msg.guild.id, data).then(v => {
-                if(v) obj.Message.edit("Filters set!");
-                else obj.Message.edit("Filters failed to set!");
-            });
+        config.Filter = {words: []};
+        config.save().then(v => {
+            if(v.success) obj.Message.edit("Filters set!");
+            else obj.Message.edit("Filters failed to set!");
         });
     });
     

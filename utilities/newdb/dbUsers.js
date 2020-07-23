@@ -1,4 +1,4 @@
-const pg = require("../dbKnexConf");
+const pg = require("./dbKnexConf");
 const moment = require("moment");
 const {SimpleLevels} = require("../../classes/Level");
 

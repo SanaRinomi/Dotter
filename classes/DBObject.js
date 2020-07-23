@@ -18,7 +18,6 @@ class DBObject {
     toJSON() {}
     static async fetch(id) {}
     static get(id) {}
-    static fromJSON(json) {}
 }
 
 module.exports = DBObject;

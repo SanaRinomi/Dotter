@@ -9,7 +9,10 @@ class CommandsTable extends DBTable {
             table.json("extra");
             table.timestamps();
         });
-        this._generatedID = true;
+    }
+
+    async upsert(id, profile, cosmetics, limits, level) {
+        return super.upsert(id, {profile, cosmetics, limits, level});
     }
 }
 

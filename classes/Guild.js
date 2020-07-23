@@ -1,7 +1,8 @@
 const DBObject = require("./DBObject");
 const GuildCache = new Map();
 const GuildConfigCache = new Map();
-const {guild} = require("../controllers/dbMain");
+const GuildRoleCache = new Map();
+const {GuildData} = require("../controllers/dbMain");
 
 const defaultConfig = {
     welcome: {
@@ -24,17 +25,19 @@ const defaultConfig = {
     }
 };
 
-class GuildRoles extends DBObject {
+class GuildRoles extends Map {
+    get ID() {return this._id;}
+    get Guild() {return this._guild;}
+
     constructor(guild, roles = []) {
-        super();
+        super(roles.map(v => {return [v.id, v.value[0] && v.value[0].id ? new Map(v.value.map(vv => [vv.id,vv.value])) : v.value];}));
 
         this._id = guild.ID;
         this._guild = guild;
-        this._roles = GuildRoles.toMap(roles);
     }
 
     toJSON() {
-        return {guild: this._id, roles: GuildRoles.toArray(this._roles)};
+        return GuildRoles.toArray(this._roles);
     }
 
     static toArray(map = new Map()) {
@@ -56,9 +59,47 @@ class GuildRoles extends DBObject {
     static fromJSON(json) {
         return new GuildRoles(json);
     }
+
+    static async fetch(id) {
+        let guild = await Guild.fetch(id);
+        return guild ? guild.Roles : null;
+    }
+
+    static get(id) {
+        return GuildRoleCache.get(id);
+    }
+
+    static cache() {
+        return GuildRoleCache;
+    }
 }
 
 class GuildConfig extends DBObject {
+    get Welcome() { return this._welcome; }
+    get Filter() { return this._filter; }
+    get Logs() { return this._logs; }
+
+    set Welcome(val) { 
+        this._welcome = {
+            ...this._welcome,
+            ...val
+        };
+    }
+
+    set Filter(val) { 
+        this._filter = {
+            ...this._filter,
+            ...val
+        };
+    }
+
+    set Logs(val) { 
+        this._logs = {
+            ...this._logs,
+            ...val
+        };
+    }
+
     constructor(guild, config = defaultConfig) {
         super();
 
@@ -82,9 +123,17 @@ class GuildConfig extends DBObject {
         GuildConfigCache.set(this._id, this);
     }
 
-    async save() {}
+    async save() {
+        return await GuildData.upsert(id, {configs: this.toJSON()});
+    }
     async load() {}
-    toJSON() {}
+    toJSON() {
+        return {
+            welcome: this._welcome,
+            logs: this._logs,
+            filter: this._filter
+        };
+    }
     static async fetch(id) {
         let guild = await Guild.fetch(id);
         return guild ? guild.Configuration : null;
@@ -93,7 +142,6 @@ class GuildConfig extends DBObject {
     static get(id) {
         return GuildConfigCache.get(id);
     }
-    static fromJSON(json) {}
 
     static cache() {
         return GuildConfigCache;
@@ -110,18 +158,42 @@ class Guild extends DBObject {
         super();
         this._id = id;
         this._users = new Map();
-        this._roles = roles[0] && Array.isArray(roles[0]) ? new Map(roles) : new Map();
-        this._config = new GuildConfig(config);
+        this._roles = new GuildRoles(this, roles ? roles : []);
+        this._configs = new GuildConfig(config);
 
         GuildCache.set(this._id, this);
     }
 
     save() {
-        
+        let json = this.toJSON();
+        GuildData.upsert(this._id, {roles:json.roles, configs:json.configs});
+    }
+
+
+    toJSON() {
+        return {
+            id: this._id,
+            users: [...this._users.keys()],
+            roles: this._roles.toJSON(),
+            configs: this._configs.toJSON()
+        };
     }
 
     static cache() {
         return GuildCache;
+    }
+    
+    static get(id) {
+        return GuildCache.get(id);
+    }
+    static async fetch(id) {
+        const cache = GuildCache.get(id);
+        if(cache) return cache;
+
+        const res = await GuildData.get(id);
+        if(res.success) {
+            return new Guild(id, res.data.roles, res.data.configs);
+        } else return new Guild(id);
     }
 }
 

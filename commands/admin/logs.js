@@ -1,6 +1,6 @@
 const {Nodes: {CommandNode, AliasNode}, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    DB = require("../../controllers/dbMain");
+    {GuildConfig} = require("../../classes/Guild");
 
 function channelSet(command, msg, name, value) {
     value = value ? value : name;
@@ -9,63 +9,48 @@ function channelSet(command, msg, name, value) {
         channel = msg.mentions.channels.first();
 
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        await DB.guild.addGuild(msg.guild.id);
+        const config = await GuildConfig.fetch(msg.guild.id);
+        if(config) {
+            let json = {};
+            json[value] = channel.id === config.Logs.default ? null : channel.id;
+            config.Logs = json;
+            config.save().then(v => {
+                if(v.success) obj.Message.edit("Logs configured!");
+                else obj.Message.edit("Failed to configure logs...! (Failed to set data)");
+            });
 
-            const logVal = await DB.guild.getLogs(msg.guild.id);
-
-            if(logVal.success) {
-                let logJSON = logVal.logs ? logVal.logs : {};
-
-                logJSON[value] = channel.id === logJSON.default ? null : channel.id;
-
-                DB.guild.updateLogs(msg.guild.id, logJSON).then(v => {
-                    if(v)
-                    obj.Message.edit("Logs configured!");
-                    else obj.Message.edit("Failed to configure logs...! (Failed to set data)");
-                });
-            } else 
-                obj.Message.edit("Failed to configure logs...! (Failed to retrieve data)");
+        } else obj.Message.edit("Failed to configure logs...! (Failed to retrieve data)");           
     });
 
     conf.send(msg.channel, `Are you sure you want to set the ${name} log channel to \`${channel.name}\`?`);
 }
 
 const Logs = new CommandNode("logs", async (cli, command, msg) => {
+    const config = await GuildConfig.fetch(msg.guild.id);
+    if(!config) {
+        msg.channel.send("Failed to get retrieve guild configs...!");
+        return;
+    }
+
     if(command.Args[0]) {
         let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-            await DB.guild.addGuild(msg.guild.id);
+            if(command.Args[0].Value)
+                config.Logs = {enabled: true, default: channel.id};
+            else config.Logs = {enabled: false};
 
-            const logVal = await DB.guild.getLogs(msg.guild.id);
-
-            if(logVal.success) {
-                let logJSON = logVal.logs ? logVal.logs : {};
-
-                if(command.Args[0].Value) {
-                    logJSON.enabled = true;
-                    logJSON.default = logJSON.default ? logJSON.default : msg.channel.id;
-                } else logJSON.enabled = false;
-
-                DB.guild.updateLogs(msg.guild.id, logJSON).then(v => {
-                    if(v)
-                    obj.Message.edit("Logs configured!");
-                    else obj.Message.edit("Failed to configure logs...! (Failed to set data)");
-                });
-            } else 
-                obj.Message.edit("Failed to configure logs...! (Failed to retrieve data)");    
+            config.save().then(v => {
+                if(v.success) obj.Message.edit("Logs configured!");
+                else obj.Message.edit("Failed to configure logs...! (Failed to set data)");
+            });
         });
 
         conf.send(msg.channel, `Are you sure you want to ${command.Args[0].Value ? "enable" : "disable"} logs?`);
     } else {
-        await DB.guild.addGuild(msg.guild.id);
-        let logData = await DB.guild.getLogs(msg.guild.id);
-
-        if(logData.success)
             msg.channel.send(`\`\`\`md
 # Log Settings
-* Enabled: ${logData.logs.enabled ? "Yes" : "No"}
-* Default Log Channel: ${logData.logs.default ? msg.guild.channels.cache.get(logData.logs.default).name : "Nothing"}${logData.logs.ujoinleave ? "\n* Join and Leave Log Channel: "+msg.guild.channels.cache.get(logData.logs.ujoinleave).name : ""}${logData.logs.ukicked ? "\n* Kicked Log Channel: "+msg.guild.channels.cache.get(logData.logs.ukicked).name : ""}${logData.logs.ubanned ? "\n* Banned Log Channel: "+msg.guild.channels.cache.get(logData.logs.ubanned).name : ""}${logData.logs.mdeleted ? "\n* Message Delete Log Channel: "+msg.guild.channels.cache.get(logData.logs.mdeleted).name : ""}${logData.logs.umuted ? "\n* Muted Log Channel: "+msg.guild.channels.cache.get(logData.logs.umuted).name : ""}${logData.logs.uwarned ? "\n* Warned Log Channel: "+msg.guild.channels.cache.get(logData.logs.uwarned).name : ""}  
+* Enabled: ${config.Logs.enabled ? "Yes" : "No"}
+* Default Log Channel: ${config.Logs.default ? msg.guild.channels.cache.get(config.Logs.default).name : "Nothing"}${config.Logs.ujoinleave ? "\n* Join and Leave Log Channel: "+msg.guild.channels.cache.get(config.Logs.ujoinleave).name : ""}${config.Logs.ukicked ? "\n* Kicked Log Channel: "+msg.guild.channels.cache.get(config.Logs.ukicked).name : ""}${config.Logs.ubanned ? "\n* Banned Log Channel: "+msg.guild.channels.cache.get(config.Logs.ubanned).name : ""}${config.Logs.mdeleted ? "\n* Message Delete Log Channel: "+msg.guild.channels.cache.get(config.Logs.mdeleted).name : ""}${config.Logs.umuted ? "\n* Muted Log Channel: "+msg.guild.channels.cache.get(config.Logs.umuted).name : ""}${config.Logs.uwarned ? "\n* Warned Log Channel: "+msg.guild.channels.cache.get(config.Logs.uwarned).name : ""}  
 \`\`\``);
-        else msg.channel.send("Failed to get any data...!");
     }
 }, {
     name: "Bot Logs",

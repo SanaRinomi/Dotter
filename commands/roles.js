@@ -1,6 +1,6 @@
 const {Nodes: {CommandNode, AliasNode}, ListMessage, ReactionMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    {roles} = require("../controllers/dbMain"),
+    {GuildRoles} = require("../classes/Guild"),
     {ROLE_TYPES} = require("../controllers/constants");
 
 const Mustache = require("mustache");
@@ -14,9 +14,9 @@ function roleFunc(guild, roles, index = 0, amount = 0, limit = 0) {
         guildName: guild.name,
         haschildren: roles ? true : false,
         children: () => {
-            if(!roles.success || !roles.roles.length) return;
-            let page = roles.roles.slice((index) * amount, (index+1) * amount);
-            let arr = page.map((v, i) => {return {...v, index: i+1};});
+            if(!roles || !roles.length) return;
+            let page = roles.slice((index) * amount, (index+1) * amount);
+            let arr = page.map((v, i) => {return {id: v[0], name: v[1].name, index: i+1};});
 
             MsgArr.set(guild.id, arr);
 
@@ -51,20 +51,21 @@ function setURole(obj, reaction, user, deleted, msg) {
 }
 
 const RolesNode = new CommandNode("roles", async (cli, command, msg) => {
-    let uroles = await roles.getValue(msg.guild.id, ROLE_TYPES.USER_ROLES);
+    let uroles = await GuildRoles.fetch(msg.guild.id);
+    const arr = uroles.get(ROLE_TYPES.USER_ROLES) ? [...uroles.get(ROLE_TYPES.USER_ROLES).entries()] : null;
 
-    if(uroles.success && uroles.roles.length > RoleAmount){
-        const limit = Math.ceil(uroles.roles.length / RoleAmount)-1;
+    if(arr && arr.length > RoleAmount){
+        const limit = Math.ceil(uroles.size / RoleAmount)-1;
         const list = new ListMessage(msg.author.id, async (index) => {
-            return roleFunc(msg.guild, uroles, index, RoleAmount, limit);
+            return roleFunc(msg.guild, arr, index, RoleAmount, limit);
         }, {func: (obj, reaction, user, deleted) => {setURole(obj, reaction, user, deleted, msg);}, emotes: reactionArr, fireonce: false});
         list.IndexLimit = limit;
         list.send(msg.channel);
     } else {
-        if(uroles.roles && uroles.roles.length){
-            const rcMsg = new ReactionMessage(msg.author.id, (obj, reaction, user, deleted) => {setURole(obj, reaction, user, deleted, msg);}, reactionArr.slice(0, uroles.roles.length), false, undefined, 60000);
+        if(uroles.get(ROLE_TYPES.USER_ROLES) && uroles.get(ROLE_TYPES.USER_ROLES).size){
+            const rcMsg = new ReactionMessage(msg.author.id, (obj, reaction, user, deleted) => {setURole(obj, reaction, user, deleted, msg);}, reactionArr.slice(0, arr.length), false, undefined, 60000);
             rcMsg.onEnd = (obj) => {obj.Message.edit(obj.Message.content+"**Roles timed out!**");};
-            rcMsg.send(msg.channel, roleFunc(msg.guild, uroles, 0, RoleAmount, 0));
+            rcMsg.send(msg.channel, roleFunc(msg.guild, arr, 0, RoleAmount, 0));
         } else {
             msg.reply("There aren't any roles you can give yourself!");
         }

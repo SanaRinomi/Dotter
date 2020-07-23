@@ -1,17 +1,23 @@
-const guild = require("./dbGuildBase");
-const roles = require("./dbGuildRoles");
-const timed = require("./dbTimedEvents");
-const commands = require("./dbComms");
-const users = require("./dbUser");
-const levels = require("./dbLevels");
-const logs = require("./dbLogs");
+const DBTable = require("./dbTable");
+const EventTable = require("./dbEvents");
+const CommandsTable = require("./dbComms");
+const {GuildTable} = require("./dbGuild");
+const {UserTable, GuildUserTable} = require("./dbUsers");
+
+const EventData = new EventTable(), GuildData = new GuildTable(), UserData = new UserTable(), GuildUserData = new GuildUserTable(), CommandData = new CommandsTable();
 
 module.exports = {
-    guild,
-    roles,
-    timed,
-    commands,
-    users,
-    levels,
-    logs
+    EventData,
+    GuildData,
+    UserData,
+    GuildUserData,
+    CommandData,
+    tables: {
+        EventTable,
+        GuildTable,
+        UserTable,
+        GuildUserTable,
+        CommandsTable,
+        DBTable
+    }
 };
