@@ -80,8 +80,8 @@ async function getAllValues() {
                     }).catch(err => {
                         Unbanned.delete(v.user);
                         if(err.message === "Unknown Ban")
-                            DLog.LogEvent(guild, {desc: `Failed to unban user \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: `\`${err.message}\`, This error is most likely caused because you unbanned the user before their ban limit was reached. **This can be generally safely ignored**!`}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);
-                        else DLog.LogEvent(guild, {desc: `Failed to unban user \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: err.message}, {name: "Event ID", value: v.id}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);
+                            DLog.LogEvent(v.user, guild, {desc: `Failed to unban user \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: `\`${err.message}\`, This error is most likely caused because you unbanned the user before their ban limit was reached. **This can be generally safely ignored**!`}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);
+                        else DLog.LogEvent(v.user, guild, {desc: `Failed to unban user \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: err.message}, {name: "Event ID", value: v.id}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);
                         EventData.del({id: v.id, user: v.user});
                     });
                     break;
@@ -89,7 +89,7 @@ async function getAllValues() {
                     EventData.del({id: v.id, user: v.user});
                     roles.getValue(v.guild, ROLE_TYPES.MUTE_ROLE).then(val => {
                         if(!val.success) {
-                            DLog.LogEvent(guild, {desc: `Failed to unmute \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: "Mute role has not been set."}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);
+                            DLog.LogEvent(v.user, guild, {desc: `Failed to unmute \`${v.extra.target}\`.`, fields: [{name: "Target", value: `\`${v.extra.target}\` (ID: \`${v.user}\`)`}, {name: "Error", value: "Mute role has not been set."}]}, EVENTS.ERROR, PRIORITIES.CRITICAL);
                             return;
                         }
 
@@ -103,7 +103,7 @@ async function getAllValues() {
                             if(v.extra.reason) fields.push({name: "Mute Reason", value: v.extra.reason});
                             fields.push({name: "Start Date", value: `${time.start.fromNow()} (${time.start.format("DD MMM YYYY, HH:mm Z")})`});
                             fields.push({name: "End Date", value: `${time.end.format("DD MMM YYYY, HH:mm Z")}`});
-                            DLog.LogEvent(guild, {desc: `User \`${v.extra.target}\` was unmuted.`, fields}, EVENTS.UNMUTED, PRIORITIES.MEDIUM);
+                            DLog.LogEvent(v.user, guild, {desc: `User \`${v.extra.target}\` was unmuted.`, fields}, EVENTS.UNMUTED, PRIORITIES.MEDIUM);
                         });
                     }).catch(err => {console.log(err);});
                     break;

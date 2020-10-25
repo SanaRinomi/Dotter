@@ -428,11 +428,11 @@ ProfileTemp.addImage("aurl", 25, 45, 75, 75, true);
 ProfileTemp.addTextBlock("{{uname}}", 110, 90, 165, null, {style: "h1", fontSize: 16, lnHeight: 5});
 ProfileTemp.addText("{{profile.currency}}", 47, 189.4, {style: "h2"});
 ProfileTemp.addText("{{profile.reputation}}", 47, 220);
-ProfileTemp.addTextBlock("Level: {{leveling.global.level}}", 30, 147, 60, 15, {style: "h3", lnHeight: 3, fontSize: 12});
+ProfileTemp.addTextBlock("Level: {{levelling.level}}", 30, 147, 60, 15, {style: "h3", lnHeight: 3, fontSize: 12});
 ProfileTemp.setStyle();
 ProfileTemp.addTextBlock("{{profile.description}}", 165, 160, 105, 105, {lnHeight: 3, fontSize: 9});
 ProfileTemp.addStep({type: "fillStyle", data: "rgb(0, 106, 194)"});
-ProfileTemp.addStep((ctx, data) => {ctx.fillRect(30, 165, 1.05*data.leveling.global.reqs.percentage, 12);});
+ProfileTemp.addStep((ctx, data) => {ctx.fillRect(30, 165, 1.05*data.levelling.reqs.percentage, 12);});
 ProfileTemp.addTextBlock("{{level.percentage}}% ({{level.currExp}}/{{level.req}})", 82.5, 164, 105, 10, {style: "center", lnHeight: 3, fontSize: 9});
 
 

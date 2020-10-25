@@ -1,6 +1,6 @@
 const {Nodes: {CommandNode, AliasNode}, ListMessage, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    {timed} = require("../controllers/dbMain"),
+    {EventData} = require("../controllers/dbMain"),
     moment = require("moment"),
     {TIMED_EVENTS} = require("../controllers/constants");
 
@@ -12,8 +12,8 @@ function reminderFunc(username, reminders, index = 0, amount = 0, limit = 0) {
         username: username,
         haschildren: reminders ? true : false,
         children: () => {
-            if(!reminders.success || !reminders.values.length) return;
-            let page = reminders.values.slice((index) * amount, (index+1) * amount);
+            if(!reminders.success || !reminders.data.length) return;
+            let page = reminders.data.slice((index) * amount, (index+1) * amount);
             let arr = page.map((v, i) => {return {...v, index: i+1, for: moment(v.until).format("dddd, MMMM Do YYYY, h:mm:ss a")};});
 
             return arr;
@@ -35,7 +35,7 @@ function reminderFunc(username, reminders, index = 0, amount = 0, limit = 0) {
 }
 
 const RemindMeNode = new CommandNode("remindme", async (cli, command, msg) => {
-    if(timed.IsValidTime(command.Args[1].Value)) {
+    if(EventData.isValidTime(command.Args[1].Value)) {
         if(msg.mentions.everyone) {
             msg.reply("Please refrain from mentioning everyone in reminders.");
             return;
@@ -47,9 +47,9 @@ const RemindMeNode = new CommandNode("remindme", async (cli, command, msg) => {
             return;
         }
 
-        const time = timed.StringToTime(command.Args[1].Value);
+        const time = EventData.stringToTime(command.Args[1].Value);
         const conf = new ConfirmationMessage(msg.author.id, () => {
-            timed.addTimedEvent(msg.author.id, msg.guild.id, TIMED_EVENTS.REMIND_ME, time.value.end.toISOString(), {reminder: command.Args[0].Value, channel: msg.channel.id}).then(v => {
+            EventData.insert({user: msg.author.id, guild: msg.guild.id, type: TIMED_EVENTS.REMIND_ME, until: time.value.end.toISOString(), extra: {reminder: command.Args[0].Value, channel: msg.channel.id}}).then(v => {
                 if(v) {
                     conf.Message.edit("Reminder set!");
                 } else {
@@ -68,10 +68,10 @@ const RemindMeNode = new CommandNode("remindme", async (cli, command, msg) => {
 });
 
 const RemindMeListNode = new CommandNode("list", async (cli, command, msg) => {
-    const res = await timed.getUserValuesOf(msg.author.id, TIMED_EVENTS.REMIND_ME);
-    if(res.success && res.values.length) {
-        if(res.values.length > ReminderAmount) {
-            const limit = Math.ceil(res.values.length / ReminderAmount)-1;
+    const res = await EventData.get({user: msg.author.id, type: TIMED_EVENTS.REMIND_ME}, null, true);
+    if(res.success && res.data.length) {
+        if(res.data.length > ReminderAmount) {
+            const limit = Math.ceil(res.data.length / ReminderAmount)-1;
             const list = new ListMessage(msg.author.id, async (index) => {
                 return reminderFunc(msg.author.tag, res, index, ReminderAmount, limit);
             });
@@ -87,7 +87,7 @@ const RemindMeListNode = new CommandNode("list", async (cli, command, msg) => {
 });
 
 const RemindMeRemoveNode = new CommandNode("remove", async (cli, command, msg) => {
-    const res = await timed.removeValue(command.Args[0].Value, msg.author.id);
+    const res = await EventData.del({id:command.Args[0].Value, user:msg.author.id});
     if(res) {
         msg.reply("Reminder deleted!");
     } else {

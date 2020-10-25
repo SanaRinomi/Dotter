@@ -1,6 +1,6 @@
 const {Nodes: {CommandNode, AliasNode}, ListMessage, ReactionMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    {GuildRoles} = require("../classes/Guild"),
+    {Roles, UserRoles} = require("../rework/DBMain"),
     {ROLE_TYPES} = require("../controllers/constants");
 
 const Mustache = require("mustache");
@@ -16,7 +16,7 @@ function roleFunc(guild, roles, index = 0, amount = 0, limit = 0) {
         children: () => {
             if(!roles || !roles.length) return;
             let page = roles.slice((index) * amount, (index+1) * amount);
-            let arr = page.map((v, i) => {return {id: v[0], name: v[1].name, index: i+1};});
+            let arr = page.map((v, i) => {return {id: v.id, name: v.name, index: i+1};});
 
             MsgArr.set(guild.id, arr);
 
@@ -43,16 +43,22 @@ function setURole(obj, reaction, user, deleted, msg) {
     const roleIndex = roleVal ? roleVal[reactionArr.indexOf(reaction.emoji.name)] : undefined;
     if(roleIndex && roleIndex !== -1) {
         let b = msg.member.roles.cache.get(roleIndex.id) ? true : false;
-        if(b) msg.member.roles.remove(roleIndex.id).then(() => {obj.Message.channel.send(`Role \`${roleIndex.name}\` removed!`);}).catch(err => {obj.Message.channel.send(`Error attempting to remove role: \`${err.message}\``);});
-        else msg.member.roles.add(roleIndex.id).then(() => {obj.Message.channel.send(`Role \`${roleIndex.name}\` added!`);}).catch(err => {obj.Message.channel.send(`Error attempting to add role: \`${err.message}\``);});
+        if(b) msg.member.roles.remove(roleIndex.id).then(async () => {
+            await UserRoles.removeLinked(msg.member.id, roleIndex.id);
+            obj.Message.channel.send(`Role \`${roleIndex.name}\` removed!`);
+        }).catch(err => {obj.Message.channel.send(`Error attempting to remove role: \`${err.message}\``);});
+        else msg.member.roles.add(roleIndex.id).then(async () => {
+            await UserRoles.link(msg.member.id, roleIndex.id);
+            obj.Message.channel.send(`Role \`${roleIndex.name}\` added!`);
+        }).catch(err => {obj.Message.channel.send(`Error attempting to add role: \`${err.message}\``);});
     } else {
         obj.Message.edit("Selected value is invalid!");
     }
 }
 
 const RolesNode = new CommandNode("roles", async (cli, command, msg) => {
-    let uroles = await GuildRoles.fetch(msg.guild.id);
-    const arr = uroles.get(ROLE_TYPES.USER_ROLES) ? [...uroles.get(ROLE_TYPES.USER_ROLES).entries()] : null;
+    const uroles = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.USER_ROLES}, undefined, true);
+    const arr = uroles.success ? uroles.data : null;
 
     if(arr && arr.length > RoleAmount){
         const limit = Math.ceil(uroles.size / RoleAmount)-1;
@@ -62,7 +68,7 @@ const RolesNode = new CommandNode("roles", async (cli, command, msg) => {
         list.IndexLimit = limit;
         list.send(msg.channel);
     } else {
-        if(uroles.get(ROLE_TYPES.USER_ROLES) && uroles.get(ROLE_TYPES.USER_ROLES).size){
+        if(arr){
             const rcMsg = new ReactionMessage(msg.author.id, (obj, reaction, user, deleted) => {setURole(obj, reaction, user, deleted, msg);}, reactionArr.slice(0, arr.length), false, undefined, 60000);
             rcMsg.onEnd = (obj) => {obj.Message.edit(obj.Message.content+"**Roles timed out!**");};
             rcMsg.send(msg.channel, roleFunc(msg.guild, arr, 0, RoleAmount, 0));

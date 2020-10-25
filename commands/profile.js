@@ -1,5 +1,5 @@
 const {Nodes: {CommandNode, AliasNode}, ListMessage, ReactionMessage, ConfirmationMessage} = require("framecord"),
-    Profile = require("../classes/Profile"),
+    {User} = require("../classes/User"),
     {ProfileTemp} = require("../controllers/canv"),
     {MessageAttachment} = require("discord.js");
 
@@ -10,21 +10,6 @@ const BkgAmount = 10;
 const MsgArr = new Map();
 
 const reactionArr = ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"];
-
-async function getProfile(id, uname, aurl) {
-    const profileData = (await Profile.fetch(id)).toJSON(true);
-    let profile = {...(profileData.profile)};
-    profile.nickname = profile.nickname ? profile.nickname : "";
-    profile.description = profile.description ? profile.description : "User still needs to set a description...!";
-    profile.currency = profile.currency > 10000 ? profile.currency/10000+"K" : profile.currency;
-    let level = {
-        percentage: Math.round(profileData.leveling.global.reqs.percentage),
-        currExp: profileData.leveling.global.exp > 1000 ? Math.round(profileData.leveling.global.exp/1000)+"K" : Math.round(profileData.leveling.global.exp),
-        req: profileData.leveling.global.reqs.next > 1000 ? Math.round(profileData.leveling.global.reqs.next/1000)+"K" : Math.round(profileData.leveling.global.reqs.next)
-    };
-
-    return await ProfileTemp.generate({bkgnd: profile.background, uname, aurl, leveling: (profileData.leveling), profile, level});
-}
     
 function bkgFunc(guild, current = "Base", index = 0, amount = 0, limit = 0) {
     const data = {
@@ -59,8 +44,8 @@ function setUBkg(obj, reaction, uprofile, msg) {
     if(bkgIndex && bkgIndex !== -1) {        
         if(bkgIndex.current) obj.Message.channel.send(`Already using backgorund: ${bkgIndex.name}`);
         else {
-            uprofile.background = bkgIndex.name;
-            uprofile.profileUpdate();
+            uprofile._cosmetics.currBackground = bkgIndex.name;
+            uprofile.save();
             obj.Message.channel.send(`Set background to: ${bkgIndex.name}`);
         }
     } else {
@@ -72,15 +57,16 @@ const ProfileComm = new CommandNode("profile", async (cli, command, msg) => {
     const mention = msg.guild ? msg.mentions.members.first() : null;
     let user = msg.author;
     if(mention) user = mention.user;
-    msg.channel.send(null, new MessageAttachment(await getProfile(user.id, user.tag, user.avatarURL({format: "png"})), `profile-${user.tag}.png`));
+    // msg.channel.send(null, new MessageAttachment(await getProfile(user.id, user.tag, user.avatarURL({format: "png"})), `profile-${user.tag}.png`));
+    msg.channel.send(null, new MessageAttachment(await (await User.fetch(user.id)).generateProfile(user.tag, user.avatarURL({format: "png"}))));
 }, {
     desc: "Get your or another person's profile",
     args: [{type: "user", name: "target"}]
 });
 
 const ProfileBkg = new CommandNode("backgrounds", async (cli, command, msg) => {
-    const UProfile = await Profile.fetch(msg.author.id);
-    const current = UProfile.background;
+    const UProfile = await User.fetch(msg.author.id);
+    const current = UProfile._cosmetics.currBackground;
     if(bkgNames.length > BkgAmount){
         const limit = Math.ceil(bkgNames.length / BkgAmount)-1;
         const list = new ListMessage(msg.author.id, async (index) => {
@@ -107,10 +93,10 @@ const ProfileDesc = new CommandNode("description", async (cli, command, msg) => 
         return;
     }
 
-    const UProfile = await Profile.fetch(msg.author.id);
+    const UProfile = await User.fetch(msg.author.id);
     const DescMess = new ConfirmationMessage(msg.author.id, (obj) => {
-        UProfile.description = command.Args[0].Value;
-        UProfile.profileUpdate();
+        UProfile._profile.description = command.Args[0].Value;
+        UProfile.save();
         obj.Message.edit("Description set!");
     });
     DescMess.send(msg.channel, `Are you sure you want to set your description to \`${command.Args[0].Value}\`?`);
@@ -121,10 +107,10 @@ const ProfileDesc = new CommandNode("description", async (cli, command, msg) => 
 });
 
 const ProfileDescReset = new CommandNode("reset", async (cli, command, msg) => {
-    const UProfile = await Profile.fetch(msg.author.id);
+    const UProfile = await User.fetch(msg.author.id);
     const DescMess = new ConfirmationMessage(msg.author.id, (obj) => {
-        UProfile.description = "";
-        UProfile.profileUpdate();
+        UProfile._profile.description = "";
+        UProfile.save();
         obj.Message.edit("Description set!");
     });
     DescMess.send(msg.channel, "Are you sure you want reset your description?");

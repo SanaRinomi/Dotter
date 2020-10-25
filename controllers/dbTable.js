@@ -29,10 +29,10 @@ class DBTable {
         else return false;
     }
 
-    async get(id, data = null) {
+    async get(id, data = null, returnArray = false) {
         let res = await pg.from(this._name).select(data).where(typeof id === "object" ? id : {id});
         if(res.length && res[0])
-            return {id: id, success: true, data: res[0]};
+            return {id: id, success: true, data: returnArray ? res : res[0]};
         else return {id: id, success: false};
     }
 

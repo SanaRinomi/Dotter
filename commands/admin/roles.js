@@ -1,56 +1,29 @@
 const {Nodes: {CommandNode, AliasNode}, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    DB = require("../../controllers/dbMain"),
+    {Roles, UserRoles} = require("../../rework/DBMain"),
     {ROLE_TYPES} = require("../../controllers/constants");
 
 async function userRoleManager(command, msg, add = true) {
     const role = msg.mentions.roles.first();
-    const roleVal = await DB.roles.getValue(msg.guild.id, ROLE_TYPES.USER_ROLES); 
 
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-        if(roleVal.success) {
-            let roleArr = roleVal.roles ? roleVal.roles : [];
+        if(add) {
+            const dbAddQuerry = await Roles.upsert(command.Args[0].ID, {
+                guild_id: msg.guild.id,
+                name: role.name,
+                role_type: ROLE_TYPES.USER_ROLES
+            });
 
-            let exists = roleArr.findIndex((v) => { return command.Args[0].ID === v.id; });
-
-            if(exists === -1) {
-                if(add) {
-                    roleArr.push({id: command.Args[0].ID, name: role.name});
-
-                    DB.roles.changeValue(msg.guild.id, ROLE_TYPES.USER_ROLES, roleArr).then(v => {
-                        if(v)
-                            obj.Message.edit("Roles configured!");
-                        else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
-                    });
-                } else {
-                    obj.Message.edit("Failed to remove role...! (Role wasn't present in user role list)");
-                }
-                
-            } else {
-                if(add) {
-                    obj.Message.edit("Failed to add role...! (Role already on list");
-                } else {
-                    roleArr.splice(exists, 1);
-                    DB.roles.changeValue(msg.guild.id, ROLE_TYPES.USER_ROLES, roleArr).then(v => {
-                        if(v)
-                            obj.Message.edit("Roles configured!");
-                        else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
-                    });
-                }
-            }                
+            if(dbAddQuerry.success)
+                obj.Message.edit("Roles configured!");
+            else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
         } else {
-            let roleArr = [];
-            if(add) {
-                roleArr.push({id: command.Args[0].ID, name: role.name});
+            await UserRoles.removeAllLinked("dot_users", command.Args[0].ID);
+            const dbRemQuerry = await Roles.del(command.Args[0].ID);
 
-                DB.roles.addRoles(msg.guild.id, ROLE_TYPES.USER_ROLES, roleArr).then(v => {
-                    if(v)
-                        obj.Message.edit("Roles configured!");
-                    else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
-                });
-            } else {
-                obj.Message.edit("Failed to remove role...! (Role wasn't present in user role list)");
-            }
+            if(dbRemQuerry)
+                obj.Message.edit("Roles configured!");
+            else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
         }
     });
 
@@ -58,15 +31,16 @@ async function userRoleManager(command, msg, add = true) {
 }
 
 const roles = new CommandNode("roles", async (cli, command, msg) => {
-    let roles = await DB.roles.getAllRoles(msg.guild.id);
+    const roles = await Roles.get({guild_id: msg.guild.id}, undefined, true);
 
     if(roles.success){
-        let muted = roles.roles.find(v => {return v.type === ROLE_TYPES.MUTE_ROLE;});
-        let user = roles.roles.find(v => {return v.type === ROLE_TYPES.USER_ROLES;});
+        const muted = roles.data.filter(v => v.role_type === ROLE_TYPES.MUTE_ROLE);
+        const user = roles.data.filter(v => v.role_type === ROLE_TYPES.USER_ROLES);
+
         msg.channel.send(`\`\`\`md
 # Role Settings
-* Muted: ${muted && muted.roles[0] ? msg.guild.roles.cache.get(muted.roles[0]).name : "Nothing"}
-* User Roles: ${user && user.roles[0] ? user.roles.map(v => { return v.name; }).join(", ") : "Nothing"}
+* Muted: ${muted && muted[0] ? muted[0].name : "Nothing"}
+* User Roles: ${user && user[0] ? user.map(v => { return v.name; }).join(", ") : "Nothing"}
 \`\`\``);
     }
     else msg.channel.send("Failed to get any data...!");
@@ -93,12 +67,12 @@ const rolesAssign = new CommandNode("assign", async (cli, command, msg) => {
 });
 
 const rolesUser = new CommandNode("user", async (cli, command, msg) => {
-    let roles = await DB.roles.getValue(msg.guild.id, ROLE_TYPES.USER_ROLES);
+    const roles = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.USER_ROLES}, undefined, true);
 
     if(roles.success){
         msg.channel.send(`\`\`\`md
 # User Roles Settings
-* Roles: ${roles.roles[0] ? roles.roles.map(v => { return v.name; }).join(", ") : "Nothing"}
+* Roles: ${roles.data[0] ? roles.data.map(v => { return v.name; }).join(", ") : "Nothing"}
 \`\`\``);
     }
     else msg.channel.send("Failed to get any data...!");
@@ -127,23 +101,22 @@ const rolesUserAdd = new CommandNode("add", async (cli, command, msg) => {
 });
 
 const rolesUserReset = new CommandNode("reset", async (cli, command, msg) => {
-    const roleVal = await DB.roles.getValue(msg.guild.id, ROLE_TYPES.USER_ROLES);
-
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-
-        if(roleVal.success) {
-            if(roleVal.roles && roleVal.roles.length) {
-                DB.roles.changeValue(msg.guild.id, ROLE_TYPES.USER_ROLES, []).then(v => {
-                    if(v)
-                        obj.Message.edit("Roles configured!");
-                    else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
-                });
-            } else {
-                obj.Message.edit("Failed to reset roles...! (List is empty)");
-            }      
-        } else {
+        const dbAllRoles = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.USER_ROLES}, undefined, true);
+        if(!dbAllRoles.success) {
             obj.Message.edit("Failed to reset roles...! (List is empty)");
+            return;
         }
+
+        const ids = Promise.all(dbAllRoles.data.map(async v => {
+            await UserRoles.removeAllLinked("dot_users", v.id);
+            return v.id;
+        }));
+
+        const removedRoles = Roles.del(ids);
+        if(removedRoles)
+            obj.Message.edit("Roles configured!");
+        else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
     });
 
     conf.send(msg.channel, "Are you sure you want to reset all user roles?");
@@ -156,51 +129,33 @@ const rolesUserReset = new CommandNode("reset", async (cli, command, msg) => {
 const roleMute = new CommandNode("mute", async (cli, command, msg) => {
     if(command.Args[0]){
         role = msg.mentions.roles.first();
-        const roleVal = await DB.roles.getValue(msg.guild.id, ROLE_TYPES.USER_ROLES);
 
         let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
-            if(roleVal.success) {
-                let roleArr = roleVal.roles ? roleVal.roles : [];
+            const oldMuteRole = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.MUTE_ROLE});
+            const dbRes = await Roles.upsert(command.Args[0].ID, {
+                guild_id: msg.guild.id,
+                name: role.name,
+                role_type: ROLE_TYPES.MUTE_ROLE
+            });
 
-                if(command.Args[0].ID !== roleArr[0]) {
-                    if(roleArr.length){
-                        roleArr = [command.Args[0].ID];
-
-                        DB.roles.changeValue(msg.guild.id, ROLE_TYPES.MUTE_ROLE, roleArr).then(v => {
-                            if(v)
-                                obj.Message.edit("Role configured!");
-                            else obj.Message.edit("Failed to configure role...! (Failed to set data)");
-                        });
-                    } else {
-                        roleArr = [command.Args[0].ID];
-                        DB.roles.addRoles(msg.guild.id, ROLE_TYPES.MUTE_ROLE, roleArr).then(v => {
-                            if(v)
-                                obj.Message.edit("Role configured!");
-                            else obj.Message.edit("Failed to configure role...! (Failed to set data)");
-                        });
-                    }
-                    
-                } else {
-                    obj.Message.edit("Failed to add role...! (Role already set to that value)");
-                }                
-            } else {
-                let roleArr = [command.Args[0].ID];
-                DB.roles.addRoles(msg.guild.id, ROLE_TYPES.MUTE_ROLE, roleArr).then(v => {
-                    if(v)
-                        obj.Message.edit("Role configured!");
-                    else obj.Message.edit("Failed to configure role...! (Failed to set data)");
-                });;
+            if(dbRes.success && oldMuteRole.success) {
+                await UserRoles.upsert({role_id: oldMuteRole.data.id}, {role_id: command.Args[0].ID}, true);
+                await Roles.del(oldMuteRole.data.id);
             }
+
+            if(dbRes.success)
+                obj.Message.edit("Role configured!");
+            else obj.Message.edit("Failed to configure role...! (Failed to set data)");
         });
     
-        conf.send(msg.channel, `Are you sure you want to SET role ${role.name} from mute role?`);
+        conf.send(msg.channel, `Are you sure you want to set role ${role.name} to mute role?`);
     } else {
-        let roles = await DB.roles.getValue(msg.guild.id, ROLE_TYPES.MUTE_ROLE);
+        const roles = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.MUTE_ROLE});
 
         if(roles.success){
             msg.channel.send(`\`\`\`md
 # Mute Role Settings
-* Role: ${roles.roles[0] ? msg.guild.roles.cache.get(roles.roles[0]).name : "Nothing"}
+* Role: ${roles.data ? roles.data.name : "Nothing"}
 \`\`\``);
         }
         else msg.channel.send("Failed to get any data...!");
@@ -213,23 +168,20 @@ const roleMute = new CommandNode("mute", async (cli, command, msg) => {
 });
 
 const roleMuteReset = new CommandNode("reset", async (cli, command, msg) => {
-    const roleVal = await DB.roles.getValue(msg.guild.id, ROLE_TYPES.MUTE_ROLE);
+    const muteRole = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.MUTE_ROLE});
+
+    if(!muteRole.success) {
+        msg.reply("No roles to reset!");
+        return;
+    }
 
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
+        await UserRoles.removeAllLinked("dot_users", muteRole.data.id);
 
-        if(roleVal.success) {
-            if(roleVal.roles && roleVal.roles.length) {
-                DB.roles.changeValue(msg.guild.id, ROLE_TYPES.MUTE_ROLE, []).then(v => {
-                    if(v)
-                        obj.Message.edit("Role configured!");
-                    else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
-                });
-            } else {
-                obj.Message.edit("Failed to reset role...! (Mute is empty)");
-            }      
-        } else {
-            obj.Message.edit("Failed to reset role...! (Mute is empty)");
-        }
+        const dbRes = await Roles.del(muteRole.data.id);
+        if(dbRes)
+            obj.Message.edit("Role configured!");
+        else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
     });
 
     conf.send(msg.channel, "Are you sure you want to reset mute role?");
@@ -247,13 +199,6 @@ rolesUser.addChild(new AliasNode("rm", rolesUserRemove));
 rolesUser.addChild(rolesUserReset);
 roles.addChild(roleMute);
 roleMute.addChild(roleMuteReset);
-/*Logs.addChild(LogsDefault);
-Logs.addChild(LogsMessageDelete);
-Logs.addChild(LogsUserBanned);
-Logs.addChild(LogsUserJoinLeave);
-Logs.addChild(LogsUserKicked);
-Logs.addChild(LogsUserMuted);
-Logs.addChild(LogsUserWarn);*/
 
 module.exports = (client) => { 
     client.registerNode(roles, "@");

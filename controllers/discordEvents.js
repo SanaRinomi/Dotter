@@ -1,6 +1,7 @@
 const commonFilter = require("../other/swearWords");
 const emojis = require("emoji-regex")();
-const Users = require("../classes/User");
+const {User,GuildUser} = require("../classes/User");
+const {Guilds, Users, GuildUsers} = require("../rework/DBMain");
 const {LevelUpTemp} = require("./canv");
 const {MessageAttachment} = require("discord.js");
 const moment = require("moment");
@@ -13,6 +14,7 @@ const {GuildConfig} = require("../classes/Guild"),
     Cache = require("./cache"),
     {Permissions: {FLAGS}} = require("discord.js"),
     {EVENTS, PRIORITIES} = require("./constants");
+const {Guild} = require("../classes/Guild");
 
 mustache.escape = function (value)
 {
@@ -45,8 +47,7 @@ let Filter = async function(dcli, msg) {
 };
 
 let WelcomeMessage = async function(member) {
-    DLog.LogEvent(member.guild, {desc: `User \`${member.user.tag}\` has joined this Discord guild`, fields: [{name: "User ID", value: member.user.id}]}, EVENTS.USER_JOIN);
-    if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_JOIN);
+    DLog.LogEvent(member.user.id, member.guild, {desc: `User \`${member.user.tag}\` has joined this Discord guild`, fields: [{name: "User ID", value: member.user.id}]}, EVENTS.USER_JOIN);
     
     const config = await GuildConfig.fetch(member.guild.id);
     if(config && config.Welcome.enabled && config.Welcome.channel && config.Welcome.message) {
@@ -62,20 +63,66 @@ let WelcomeMessage = async function(member) {
 };
 
 module.exports = (discordCli) => {
-    discordCli.on("message", (msg) => {
+    discordCli.on("message", async (msg) => {
         Filter(discordCli, msg);
-        
-        if(!msg.author.bot && !msg.system)
-            Users.fetch(msg.author.id).then(v => {
-                v.guild_levels[0];
-                v.messageExp(msg, async (lvl) => {
-                    msg.channel.send(null, new MessageAttachment(await LevelUpTemp.generate({bkgnd: v.background, level: lvl, uname: msg.author.username, aurl: msg.author.avatarURL({format: "png"})}), `level-up-${msg.author.tag}.png`));
+
+        if(!msg.author.bot && !msg.system) {
+            if(msg.guild) {
+                GuildUser.fetch(msg.author.id, msg.guild.id).then(v => {
+                    v.expCall(async (lvl) => {
+                        if(lvl.type === "guild") msg.channel.send(null, new MessageAttachment(await v.generateLevelUp(lvl.level, msg.author.username, msg.author.avatarURL({format: "png"}), `level-up-${msg.author.tag}.png`)));
+                    });
+
+                    if(v._user._profile.username !== msg.author.username) {
+                        v._user._profile.username = msg.author.username;
+                        v._user.save();
+                    }
                 });
-                if(v.username !== msg.author.username) {
+
+                const DBGuildRes = await Guilds.get(msg.guild.id);
+                if(!DBGuildRes.success) await Guilds.insert({
+                    id: msg.guild.id,
+                    name: msg.guild.name,
+                    icon_url: msg.guild.iconURL({size: 4096}) || null
+                });
+
+                const DBUserRes = await Users.get(msg.author.id);
+                if(!DBUserRes.success) await Users.insert({
+                    id: msg.author.id,
+                    username: msg.author.username
+                });
+
+                const DBGuildUserRes = await GuildUsers.get(msg.member.id);
+                if(!DBGuildUserRes.success) await GuildUsers.insert({
+                    id: msg.member.id,
+                    user_id: msg.author.id,
+                    guild_id: msg.guild.id
+                });
+
+                Guild.fetch(msg.guild.id).then(v => {
+                    const guildIcon = msg.guild.iconURL({size: 4096});
+                    let save = false;
+                    if(msg.guild.name !== v.Name) {
+                        v.Name = msg.guild.name;
+                        save = true;
+                    }
+
+                    if(guildIcon !== v.Icon) {
+                        v.Icon = guildIcon;
+                        save = true;
+                    }
+
+                    if(save) v.save();
+                });
+            }
+            else User.fetch(msg.author.id).then(v => {
+                v.expCall((lvl) => {});
+                if(v._profile.username !== msg.author.username) {
                     v._profile.username = msg.author.username;
                     v.save();
                 }
             });
+        }
     });
     discordCli.on("messageUpdate", (omsg, msg) => {Filter(discordCli, msg);});
     discordCli.on("guildMemberAdd", WelcomeMessage);
@@ -85,13 +132,12 @@ module.exports = (discordCli) => {
         if(v !== undefined){
             let fields = [{name: "Target", value: `${member.user.tag} (ID: \`${member.user.id}\`)`}, {name: "Enforcer", value: v.enforcer}];
             if(v.reason) fields.push({name: "Reason", value: v.reason});
-            DLog.LogEvent(member.guild, {desc: `User \`${member.user.tag}\` was kicked!`, fields}, EVENTS.USER_KICKED, PRIORITIES.MEDIUM);
+            DLog.LogEvent(member.user.id, member.guild, {desc: `User \`${member.user.tag}\` was kicked!`, fields}, EVENTS.USER_KICKED, PRIORITIES.MEDIUM);
             if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_KICKED, v.enforcerID, v.reason);
             Cache.Kicked.delete(member.id);
         }
         else if(vv === undefined) {
-            DLog.LogEvent(member.guild, {desc: `User \`${member.user.tag}\` left the guild.`, fields: [{name: "User ID", value: member.user.id}]}, EVENTS.USER_LEAVE);
-            if(member.guild) DB.logs.addEvent(member.user.id, member.guild.id, EVENTS.USER_LEAVE);
+            DLog.LogEvent(member.user.id, member.guild, {desc: `User \`${member.user.tag}\` left the guild.`, fields: [{name: "User ID", value: member.user.id}]}, EVENTS.USER_LEAVE);
             Cache.Kicked.delete(member.id);
         }
     });
@@ -103,13 +149,13 @@ module.exports = (discordCli) => {
             fields.push({name: "Enforcer", value: v.enforcer});
             if(v.reason) fields.push({name: "Reason", value: v.reason});
             if(v.time) fields.push({name: "Time", value: `${v.time.value.end.fromNow(true)} (${v.time.value.end.format("DD MMM YYYY, HH:mm Z")})`});
-            DLog.LogEvent(guild, {desc: `User \`${v.target.tag}\` was banned from the guild.`, fields}, EVENTS.USER_BANNED, PRIORITIES.HIGH);
+            DLog.LogEvent(user.id, guild, {desc: `User \`${v.target.tag}\` was banned from the guild.`, fields}, EVENTS.USER_BANNED, PRIORITIES.HIGH);
             Cache.Banned.delete(user.id);
         } else {
             let info = await guild.fetchBan(user);
             fields.push({name: "Target", value: `\`${user.tag}\` (ID: \`${user.id}\`)`});
             if(info.reason) fields.push({name: "Reason", value: info.reason});
-            DLog.LogEvent(guild, {desc: `User \`${user.tag}\` was banned from the guild.`, fields}, EVENTS.USER_BANNED, PRIORITIES.HIGH);
+            DLog.LogEvent(user.id, guild, {desc: `User \`${user.tag}\` was banned from the guild.`, fields}, EVENTS.USER_BANNED, PRIORITIES.HIGH);
         }
     });
     discordCli.on("guildBanRemove", async (guild, user) => {
@@ -125,11 +171,11 @@ module.exports = (discordCli) => {
                 fields.push({name: "End Date", value: `${v.time.end.format("DD MMM YYYY, HH:mm Z")}`});
             }else if(v.reason) fields.push({name: "Unban Reason", value: v.reason});
 
-            DLog.LogEvent(guild, {desc: `User \`${v.target}\` was unbanned from the guild.`, fields}, EVENTS.USER_UNBANNED, PRIORITIES.MEDIUM);
+            DLog.LogEvent(user.id, guild, {desc: `User \`${v.target}\` was unbanned from the guild.`, fields}, EVENTS.USER_UNBANNED, PRIORITIES.MEDIUM);
             Cache.Unbanned.delete(user.id);
         } else {
             fields.push({name: "Target", value: `\`${user.tag}\` (ID: \`${user.id}\`)`});
-            DLog.LogEvent(guild, {desc: `User \`${user.tag}\` was unbanned from the guild.`, fields}, EVENTS.USER_UNBANNED, PRIORITIES.MEDIUM);
+            DLog.LogEvent(user.id, guild, {desc: `User \`${user.tag}\` was unbanned from the guild.`, fields}, EVENTS.USER_UNBANNED, PRIORITIES.MEDIUM);
         }
     });
     discordCli.on("messageDelete", msg => {
@@ -141,9 +187,10 @@ module.exports = (discordCli) => {
         let attachments = msg.attachments.size ? {name: "Attachments", value: msg.attachments.map(v => {return v.proxyURL;}).join("\n")} : {name: "Attachments", value: "\`None\`"};
         let reason = FilteredMessages.get(msg.id) ? {name: "Reason", value: FilteredMessages.get(msg.id)} : {name: "Reason", value: "\`None\`"};
         let message = /\S/.test(msg.cleanContent) ? {name: "Message", value: msg.cleanContent} : {name: "Message", value: "\`None\`"};
+        let channel = msg.channel ? {name: "Channel", value: msg.channel.name} : {name: "Channel", value: "\`Unknown\`"};
         
         let time_live = {name: "Time Live", value: `${posted.to(deleted, true)} (Created on: \`${posted.format("DD MMM YYYY, HH:mm Z")}\` | Deleted on: \`${deleted.format("DD MMM YYYY, HH:mm Z")}\`)`};
         FilteredMessages.delete(msg.id);
-        DLog.LogEvent(msg.guild, {desc: `A message by \`${msg.author.tag}\` (ID: \`${msg.author.id}\`) was deleted.`, fields: [message, attachments, reason, time_live]}, EVENTS.MESSAGE_DELETED);
+        DLog.LogEvent(msg.author.id, msg.guild, {desc: `A message by \`${msg.author.tag}\` (ID: \`${msg.author.id}\`) was deleted.`, fields: [message, attachments, reason, channel, time_live]}, EVENTS.MESSAGE_DELETED);
     });
 };

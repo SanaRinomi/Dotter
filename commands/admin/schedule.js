@@ -1,6 +1,6 @@
 const {Nodes: {CommandNode, AliasNode}, ListMessage, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    {timed} = require("../../controllers/dbMain"),
+    {EventData} = require("../../controllers/dbMain"),
     moment = require("moment"),
     {TIMED_EVENTS} = require("../../controllers/constants");
 
@@ -12,8 +12,8 @@ function reminderFunc(guild, schedmsgs, index = 0, amount = 0, limit = 0) {
         guild,
         haschildren: reminders ? true : false,
         children: () => {
-            if(!schedmsgs.success || !schedmsgs.values.length) return;
-            let page = schedmsgs.values.slice((index) * amount, (index+1) * amount);
+            if(!schedmsgs.success || !schedmsgs.data.length) return;
+            let page = schedmsgs.data.slice((index) * amount, (index+1) * amount);
             let arr = page.map((v, i) => {return {...v, index: i+1, for: moment(v.until).format("dddd, MMMM Do YYYY, h:mm:ss a")};});
 
             return arr;
@@ -35,11 +35,11 @@ function reminderFunc(guild, schedmsgs, index = 0, amount = 0, limit = 0) {
 }
 
 const RemindMeNode = new CommandNode("schedule", async (cli, command, msg) => {
-    if(timed.IsValidTime(command.Args[2].Value)) {
-        const time = timed.StringToTime(command.Args[2].Value);
+    if(EventData.isValidTime(command.Args[2].Value)) {
+        const time = EventData.stringToTime(command.Args[2].Value);
         const conf = new ConfirmationMessage(msg.author.id, () => {
-            timed.addTimedEvent(msg.author.id, msg.guild.id, TIMED_EVENTS.SCHEDULED_MESSAGE, time.value.end.toISOString(), {message: command.Args[1].Value, channel: msg.mentions.channels.first().id}).then(v => {
-                if(v) {
+            EventData.insert({user: msg.author.id, guild: msg.guild.id, type: TIMED_EVENTS.SCHEDULED_MESSAGE, until: time.value.end.toISOString(), extra: {message: command.Args[1].Value, channel: msg.mentions.channels.first().id}}).then(v => {
+                if(v.success) {
                     conf.Message.edit("Message scheduled!");
                 } else {
                     conf.Message.edit("There was an error!");

@@ -10,10 +10,6 @@ class UserTable extends DBTable {
             table.json("level");
         });
     }
-
-    async upsert(id, profile, cosmetics, limits, level) {
-        return super.upsert(id, {profile, cosmetics, limits, level});
-    }
 }
 
 class GuildUserTable extends DBTable {
@@ -27,10 +23,6 @@ class GuildUserTable extends DBTable {
             table.json("level");
             table.primary(["user", "guild"]);
         });
-    }
-
-    async upsert(user, guild, permissions, roles, logs, level) {
-        return super.upsert({user, guild}, {permissions, roles, logs, level});
     }
 
     async get(user, guild) {

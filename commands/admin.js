@@ -93,7 +93,7 @@ const Mute = new CommandNode("mute", (cli, command, msg) => {
                     fields.push({name: "Enforcer", value: msg.author.tag});
                     if(command.Args[1] && command.Args[1].Type === "string" ) fields.push({name: "Reason", value: command.Args[1].Value});
                     if(time) fields.push({name: "Time", value: `${time.value.end.fromNow(true)} (${time.value.end.format("DD MMM YYYY, HH:mm Z")})`});
-                    LogEvent(msg.guild, {desc: `\`${mention.user.tag}\` was muted.`, fields}, EVENTS.MUTED, PRIORITIES.MEDIUM);
+                    LogEvent(mention.user.id,msg.guild, {desc: `\`${mention.user.tag}\` was muted.`, fields}, EVENTS.MUTED, PRIORITIES.MEDIUM);
                 }).catch(err => {
                     obj.Message.channel.send(`Error attempting to mute: \`${err.message}\``);
                 });
@@ -126,8 +126,8 @@ const Unmute = new CommandNode("unmute", (cli, command, msg) => {
                     user.send(`You have been unmuted in **${msg.guild.name}**${command.Args[1] ? " for the following reason: " + command.Args[1].toCode(true) : ""}`);
                     logs.addEvent(user.id, msg.guild.id, EVENTS.UNMUTED, msg.author.id, command.Args[1] ? command.Args[1].Value : null);
                     if(command.Args[1])
-                        LogEvent(msg.guild, {desc: `\`${mention.user.tag}\` was unmuted by \`${msg.author.tag}\``, fields: [{name: "Target", value: `\`${mention.user.tag}\` (ID: \`${mention.user.id}\`)`}, {name: "Enforcer", value: msg.author.tag}, {name: "Reason", value: command.Args[1].Value}]}, EVENTS.UNMUTED, PRIORITIES.MEDIUM);
-                    else LogEvent(msg.guild, {desc: `\`${mention.user.tag}\` was unmuted by \`${msg.author.tag}\``, fields: [{name: "Target", value: `\`${mention.user.tag}\` (ID: \`${mention.user.id}\`)`}, {name: "Enforcer", value: msg.author.tag}]}, EVENTS.UNMUTED, PRIORITIES.MEDIUM);
+                        LogEvent(user.id,msg.guild, {desc: `\`${mention.user.tag}\` was unmuted by \`${msg.author.tag}\``, fields: [{name: "Target", value: `\`${mention.user.tag}\` (ID: \`${mention.user.id}\`)`}, {name: "Enforcer", value: msg.author.tag}, {name: "Reason", value: command.Args[1].Value}]}, EVENTS.UNMUTED, PRIORITIES.MEDIUM);
+                    else LogEvent(user.id, msg.guild, {desc: `\`${mention.user.tag}\` was unmuted by \`${msg.author.tag}\``, fields: [{name: "Target", value: `\`${mention.user.tag}\` (ID: \`${mention.user.id}\`)`}, {name: "Enforcer", value: msg.author.tag}]}, EVENTS.UNMUTED, PRIORITIES.MEDIUM);
                 }).catch(err => {
                     obj.Message.channel.send(`Error attempting to unmute: \`${err.message}\``);
                 });

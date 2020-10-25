@@ -1,5 +1,5 @@
 const {Nodes: {CommandNode, AliasNode}, ConfirmationMessage} = require("framecord"),
-    Profile = require("../classes/Profile"),
+    {User} = require("../classes/User"),
     moment = require("moment"),
     {MessageEmbed} = require("discord.js");
 
@@ -22,8 +22,8 @@ const DailyComm = new CommandNode("daily", async (cli, command, msg) => {
     if(mention && mention.user.bot)
         msg.reply("You must target a user that isn't a bot!");
     else {
-        const upf = await Profile.fetch(msg.author.id);
-        const time = upf.limits.daily ? moment(upf.limits.daily) : null;
+        const upf = await User.fetch(msg.author.id);
+        const time = upf._limits.daily ? moment(upf._limits.daily) : null;
         time.format();
 
         if(time && time.isAfter()){
@@ -32,29 +32,30 @@ const DailyComm = new CommandNode("daily", async (cli, command, msg) => {
         } else {
             let pf, other = false;
             if(!mention || mention.user.id === msg.author.id) pf = upf;
-            else {pf = await Profile.fetch(mention.user.id); other = true;}
+            else {pf = await User.fetch(mention.user.id); other = true;}
 
             if(time && time.add(1, "day").isBefore()) {
-                pf.limits.daily_count = 1;
+                pf._limits.daily_count = 1;
             } else
-                pf.limits.daily_count += 1;
+                pf._limits.daily_count += 1;
             
             const dailyEmb = new MessageEmbed();
-            dailyEmb.setThumbnail(daily_img[pf.limits.daily_count]);
-            dailyEmb.setAuthor(`Day ${pf.limits.daily_count} in a row`, mention ? mention.user.displayAvatarURL({dynamic: true}) : msg.author.displayAvatarURL({dynamic: true}));
+            dailyEmb.setThumbnail(daily_img[pf._limits.daily_count]);
+            dailyEmb.setAuthor(`Day ${pf._limits.daily_count} in a row`, mention ? mention.user.displayAvatarURL({dynamic: true}) : msg.author.displayAvatarURL({dynamic: true}));
 
-            if(pf.limits.daily_count === dailya) {
-                pf.currency += full;
-                pf.limits.daily_count = 0;
+            if(pf._limits.daily_count === dailya) {
+                pf._profile.currency += full;
+                pf._limits.daily_count = 0;
                 dailyEmb.setDescription(`${other ? mention : "You"} gained **${full}** gems today for ${other ? msg.member : "you"} completing the **full daily circle**!`);
             } else {
-                pf.currency += normal;
-                dailyEmb.setDescription(`${other ? mention : "You"} gained **${normal}** gems today for ${other ? msg.member : "you"} registering **${pf.limits.daily_count}** out of ${dailya} times in a row!`);
+                pf._profile.currency += normal;
+                dailyEmb.setDescription(`${other ? mention : "You"} gained **${normal}** gems today for ${other ? msg.member : "you"} registering **${pf._limits.daily_count}** out of ${dailya} times in a row!`);
             }
 
             msg.channel.send(other ? mention : null, dailyEmb);
-            upf.limits.daily = moment().add(1, "day").toDate();
-            pf.profileUpdate();
+            upf._limits.daily = moment().add(1, "day").toDate();
+            pf.save();
+            if(other) upf.save();
         }
     };
 }, {

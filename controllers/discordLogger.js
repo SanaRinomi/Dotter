@@ -1,4 +1,5 @@
-const DB = require("./dbMain"),
+const {GuildConfig} = require("../classes/Guild"),
+    {GuildUser} = require("../classes/User"),
     {MessageEmbed} = require("discord.js"),
     {EVENTS, PRIORITIES} = require("./constants");
 
@@ -55,65 +56,76 @@ function embed(message, priority, type) {
     embed.setColor(priority);
     embed.setTimestamp(Date.now());
     embed.setFooter(`${evName} | ${priorityStr}`);
-    
     return embed;
 }
 
-const LogEvent = async function(guild, message, type, priority = PRIORITIES.LOW) {
+const LogEvent = async function(user, guild, message, type, priority = PRIORITIES.LOW) {
     if(guild) {
-        const logVal = await DB.guild.getLogs(guild.id);
+        if(type !== EVENTS.ERROR) GuildUser.fetch(user, guild.id).then(v => {
+            if(v) {
+                if(typeof message === "object") {
+                    let fields = [...message.fields].filter(vv => vv.value !== "`None`");
+                    let indexes = [fields.findIndex(vv => vv.name === "Enforcer"), fields.findIndex(vv => vv.name === "Reason")];
+                    let enforcer = indexes[0] >= 0 ? fields.splice(indexes[0], 1) : null;
+                    let reason = indexes[1] >= 0 ? fields.splice(indexes[1], 1) : null;
+                    v.log(type, reason, enforcer, fields);
+                } else v.log(type);
+            }
+        });
 
-        if(logVal.success && logVal.logs) {
-            if(!logVal.logs.enabled)
+        const config = await GuildConfig.fetch(guild.id);
+
+        if(config && config.Logs) {
+            if(!config.Logs.enabled)
                 return;
 
             function defChnl() {
-                let defChannel = guild.channels.cache.get(logVal.logs.default);
+                let defChannel = guild.channels.cache.get(config.Logs.default);
                 if(defChannel) defChannel.send(embed(message, priority, type));
             }
 
             switch(type) {
                 case EVENTS.USER_JOIN:
                 case EVENTS.USER_LEAVE:
-                    if(logVal.logs.ujoinleave) {
-                        let channel = guild.channels.cache.get(logVal.logs.ujoinleave);
+                    if(config.Logs.ujoinleave) {
+                        let channel = guild.channels.cache.get(config.Logs.ujoinleave);
                         if(channel) {channel.send(embed(message, priority, type)); break;}
                     }
                     defChnl();
                     break;
                 case EVENTS.USER_KICKED:
-                    if(logVal.logs.ukicked) {
-                        let channel = guild.channels.cache.get(logVal.logs.ukicked);
+                    if(config.Logs.ukicked) {
+                        let channel = guild.channels.cache.get(config.Logs.ukicked);
                         if(channel) {channel.send(embed(message, priority, type)); break;}
                     }
                     defChnl();
                     break;
                 case EVENTS.USER_BANNED:
                 case EVENTS.USER_UNBANNED:
-                    if(logVal.logs.ubanned) {
-                        let channel = guild.channels.cache.get(logVal.logs.ubanned);
+                    if(config.Logs.ubanned) {
+                        let channel = guild.channels.cache.get(config.Logs.ubanned);
                         if(channel) {channel.send(embed(message, priority, type)); break;}
                     }
                     defChnl();
                     break;
                 case EVENTS.MESSAGE_DELETED:
-                    if(logVal.logs.mdeleted) {
-                        let channel = guild.channels.cache.get(logVal.logs.mdeleted);
+                    if(config.Logs.mdeleted) {
+                        let channel = guild.channels.cache.get(config.Logs.mdeleted);
                         if(channel) {channel.send(embed(message, priority, type)); break;}
                     }
                     defChnl();
                     break;
                 case EVENTS.MUTED:
                 case EVENTS.UNMUTED:
-                    if(logVal.logs.umuted) {
-                        let channel = guild.channels.cache.get(logVal.logs.umuted);
+                    if(config.Logs.umuted) {
+                        let channel = guild.channels.cache.get(config.Logs.umuted);
                         if(channel) {channel.send(embed(message, priority, type)); break;}
                     }
                     defChnl();
                     break;
                 case EVENTS.WARNS:
-                    if(logVal.logs.uwarned) {
-                        let channel = guild.channels.cache.get(logVal.logs.uwarned);
+                    if(config.Logs.uwarned) {
+                        let channel = guild.channels.cache.get(config.Logs.uwarned);
                         if(channel) {channel.send(embed(message, priority, type)); break;}
                     }
                     defChnl();
