@@ -1,6 +1,6 @@
 const {Nodes: {CommandNode, AliasNode}, ListMessage, ReactionMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    {Roles, UserRoles} = require("../rework/DBMain"),
+    {Roles, UserRoles, RolesRequired} = require("../rework/DBMain"),
     {ROLE_TYPES} = require("../controllers/constants");
 
 const Mustache = require("mustache");
@@ -58,7 +58,40 @@ function setURole(obj, reaction, user, deleted, msg) {
 
 const RolesNode = new CommandNode("roles", async (cli, command, msg) => {
     const uroles = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.USER_ROLES}, undefined, true);
-    const arr = uroles.success ? uroles.data : null;
+    let arr = uroles.success ? uroles.data : null;
+
+    if(arr) {
+        const user_roles = msg.member.roles.cache.array().map(v => v.id);
+        arr = await Promise.all(arr.map(async v => {
+            const required = await RolesRequired.get({role_target: v.id}, ["role_required", "role_group"], true);
+            if(required.success)
+                return {...v, req_roles: required.data};
+            else return v;
+        }));
+
+        arr = arr.filter(v => {
+            if(v.req_roles) {
+                let groups = new Map();
+                v.req_roles.forEach(vv => {
+                    let group = groups.get(vv.role_group);
+                    if(!group) group = [vv.role_required];
+                    else group.push(vv.role_required);
+                    groups.set(vv.role_group, group);
+                });
+
+                groups = [...groups.entries()];
+
+                for (let i = 0; i < groups.length; i++) {
+                    const group = groups[i][1];
+                    let res = group.every(vv => user_roles.includes(vv));
+                    if(res) return true;
+                }
+
+                return false;
+            }
+            else return true;
+        });
+    }
 
     if(arr && arr.length > RoleAmount){
         const limit = Math.ceil(uroles.size / RoleAmount)-1;

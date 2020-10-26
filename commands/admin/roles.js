@@ -1,6 +1,6 @@
 const {Nodes: {CommandNode, AliasNode}, ConfirmationMessage} = require("framecord"),
     {Permissions: {FLAGS}} = require("discord.js"),
-    {Roles, UserRoles} = require("../../rework/DBMain"),
+    {Roles, UserRoles, RolesRequired} = require("../../rework/DBMain"),
     {ROLE_TYPES} = require("../../controllers/constants");
 
 async function userRoleManager(command, msg, add = true) {
@@ -19,6 +19,7 @@ async function userRoleManager(command, msg, add = true) {
             else obj.Message.edit("Failed to configure roles...! (Failed to set data)");
         } else {
             await UserRoles.removeAllLinked("dot_users", command.Args[0].ID);
+            await RolesRequired.del({role_target: command.Args[0].ID});
             const dbRemQuerry = await Roles.del(command.Args[0].ID);
 
             if(dbRemQuerry)
@@ -100,6 +101,64 @@ const rolesUserAdd = new CommandNode("add", async (cli, command, msg) => {
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
+const rolesUserRequire = new CommandNode("require", async (cli, command, msg) => {
+    const roles = await RolesRequired.get({role_target: command.Args[0].ID}, undefined, true);
+    
+    if(roles.success) {
+        const target = msg.mentions.roles.first();
+
+        let groups = new Map();
+        roles.data.forEach(v => {
+            let group = groups.get(v.role_group);
+            if(!group) group = v.role_name;
+            else group += `, ${v.role_name}`;
+            groups.set(v.role_group, group);
+        });
+
+        msg.channel.send(`\`\`\`md
+# ${target.name}'s Requirements
+${[...groups.entries()].map(v => {return `* Group ${v[0]}: ${v[1]}`;}).join("\n\n")}
+\`\`\``);
+    } else {
+        msg.channel.send("This role requires nothing!");
+    }
+}, {
+    name: "See required role",
+    desc: "See what roles are required for a given role",
+    args: [{name: "Target", type: "role", optional: false}],
+    perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
+});
+
+const rolesUserRequireAdd = new CommandNode("add", async (cli, command, msg) => {
+    const roleCheck = await RolesRequired.get({role_target: command.Args[0].ID, role_required: command.Args[1].ID});
+    
+    if(roleCheck.success) {
+        msg.channel.send("Role already assigned!");
+        return;
+    }
+
+    const target = await msg.guild.roles.fetch(command.Args[0].ID);
+    const role = await msg.guild.roles.fetch(command.Args[1].ID);
+
+    const raMsg = new ConfirmationMessage(msg.author.id, async (obj, reaction, user, deleted) => {
+        const dbQuery = await RolesRequired.insert({
+            role_target: command.Args[0].ID,
+            role_required: command.Args[1].ID,
+            role_name: role.name,
+            role_group: command.Args[2] ? command.Args[2].Value : 1
+        }, ["role_target", "role_required"]);
+
+        if(dbQuery.success) obj.Message.channel.send(`Role \`${role.name}\` was assigned!`);
+        else obj.Message.channel.send("Role failed to assign!");
+    });
+    raMsg.send(msg.channel, `Are you sure you want to assign the role ${role.name} to group ${command.Args[2] ? command.Args[2].Value : "1"} within ${target.name}?`);
+}, {
+    name: "Add required role",
+    desc: "Require a user have defined roles before havin access to a user role",
+    args: [{name: "Target", type: "role", optional: false}, {name: "Role", type: "role", optional: false}, {name: "Group", type: "number", optional: true}],
+    perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
+});
+
 const rolesUserReset = new CommandNode("reset", async (cli, command, msg) => {
     let conf = new ConfirmationMessage(msg.author.id, async (obj) => {
         const dbAllRoles = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.USER_ROLES}, undefined, true);
@@ -110,6 +169,7 @@ const rolesUserReset = new CommandNode("reset", async (cli, command, msg) => {
 
         const ids = Promise.all(dbAllRoles.data.map(async v => {
             await UserRoles.removeAllLinked("dot_users", v.id);
+            await RolesRequired.del({role_target: command.Args[0].ID});
             return v.id;
         }));
 
@@ -195,6 +255,9 @@ roles.addChild(rolesUser);
 roles.addChild(rolesAssign);
 rolesUser.addChild(rolesUserAdd);
 rolesUser.addChild(rolesUserRemove);
+rolesUser.addChild(rolesUserRequire);
+rolesUser.addChild(new AliasNode("req", rolesUserRequire));
+rolesUserRequire.addChild(rolesUserRequireAdd);
 rolesUser.addChild(new AliasNode("rm", rolesUserRemove));
 rolesUser.addChild(rolesUserReset);
 roles.addChild(roleMute);

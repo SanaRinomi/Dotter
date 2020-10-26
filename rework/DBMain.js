@@ -127,11 +127,23 @@ class UserRolesTable extends LinkingTable {
     }
 }
 
+class RolesRequireTable extends Table {
+    constructor() {
+        super("dot_role_require", table => {
+            table.string("role_target").references("dot_roles.id").primary();
+            table.string("role_required");
+            table.string("role_name");
+            table.integer("role_group").defaultTo(1);
+        }, false);
+    }
+}
+
 const Users = new UserTable();
 const Guilds = new GuildTable();
 const GuildUsers = new GuildUserTable();
 const Roles = new RolesTable();
 const UserRoles = new UserRolesTable();
+const RolesRequired = new RolesRequireTable();
 const Cosmetics = new CosmeticsTable();
 const UserCosmetics = new UserCosmeticsTable();
 const Logs = new LogsTable();
@@ -143,6 +155,7 @@ module.exports = {
     GuildUsers,
     Roles,
     UserRoles,
+    RolesRequired,
     Cosmetics,
     UserCosmetics,
     Logs,
