@@ -28,7 +28,7 @@ async function userRoleManager(command, msg, add = true) {
         }
     });
 
-    conf.send(msg.channel, `Are you sure you want to ${add ? "add" : "remove"} role ${role.name} ${add ? "to" : "from"} user roles?`);
+    conf.send(msg.channel, `Are you sure you want to ${add ? "add" : "remove"} role \`${role.name}\` ${add ? "to" : "from"} user roles?`);
 }
 
 const roles = new CommandNode("roles", async (cli, command, msg) => {
@@ -151,11 +151,60 @@ const rolesUserRequireAdd = new CommandNode("add", async (cli, command, msg) => 
         if(dbQuery.success) obj.Message.channel.send(`Role \`${role.name}\` was assigned!`);
         else obj.Message.channel.send("Role failed to assign!");
     });
-    raMsg.send(msg.channel, `Are you sure you want to assign the role ${role.name} to group ${command.Args[2] ? command.Args[2].Value : "1"} within ${target.name}?`);
+    raMsg.send(msg.channel, `Are you sure you want to assign the role \`${role.name}\` to group \`${command.Args[2] ? command.Args[2].Value : "1"}\` within \`${target.name}\`?`);
 }, {
     name: "Add required role",
     desc: "Require a user have defined roles before havin access to a user role",
     args: [{name: "Target", type: "role", optional: false}, {name: "Role", type: "role", optional: false}, {name: "Group", type: "number", optional: true}],
+    perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
+});
+
+const rolesUserRequireRemove = new CommandNode("remove", async (cli, command, msg) => {
+    const roleCheck = await RolesRequired.get({role_target: command.Args[0].ID, role_required: command.Args[1].ID});
+    
+    if(!roleCheck.success) {
+        msg.channel.send("Role not assigned!");
+        return;
+    }
+
+    const target = await msg.guild.roles.fetch(command.Args[0].ID);
+    const role = await msg.guild.roles.fetch(command.Args[1].ID);
+
+    const raMsg = new ConfirmationMessage(msg.author.id, async (obj, reaction, user, deleted) => {
+        const dbQuery = await RolesRequired.del({role_target: command.Args[0].ID, role_required: command.Args[1].ID});
+
+        if(dbQuery) obj.Message.channel.send(`Role \`${role.name}\` was removed!`);
+        else obj.Message.channel.send("Role failed to remove!");
+    });
+    raMsg.send(msg.channel, `Are you sure you want to remove the role \`${role.name}\` as a requirement for \`${target.name}\`?`);
+}, {
+    name: "Remove required role",
+    desc: "Remove a required role from a target role",
+    args: [{name: "Target", type: "role", optional: false}, {name: "Role", type: "role", optional: false}],
+    perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
+});
+
+const rolesUserRequireReset = new CommandNode("reset", async (cli, command, msg) => {
+    const roleCheck = command.Args[1] ? await RolesRequired.get({role_target: command.Args[0].ID, role_group: command.Args[1].Value}) : await RolesRequired.get({role_target: command.Args[0].ID});
+    
+    if(!roleCheck.success) {
+        msg.channel.send("No roles assigned!");
+        return;
+    }
+
+    const role = await msg.guild.roles.fetch(command.Args[0].ID);
+
+    const raMsg = new ConfirmationMessage(msg.author.id, async (obj, reaction, user, deleted) => {
+        const dbQuery = command.Args[1] ?  await RolesRequired.del({role_target: command.Args[0].ID, role_group: command.Args[1].Value}) : await RolesRequired.del({role_target: command.Args[0].ID});
+
+        if(dbQuery) obj.Message.channel.send(`Role \`${role.name}\`'s ${command.Args[1] ? "group " + command.Args[1].Value : ""}requirements were reset!`);
+        else obj.Message.channel.send("Role failed to reset!");
+    });
+    raMsg.send(msg.channel, `Are you sure you want to reset the requirements for ${command.Args[1] ? "group `" + command.Args[1].Value + "` of " : ""}\`${role.name}\`?`);
+}, {
+    name: "Reset required roles",
+    desc: "Reset all required roles from a target role, can specify only a group",
+    args: [{name: "Target", type: "role", optional: false}, {name: "Group", type: "number", optional: true}],
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
@@ -208,7 +257,7 @@ const roleMute = new CommandNode("mute", async (cli, command, msg) => {
             else obj.Message.edit("Failed to configure role...! (Failed to set data)");
         });
     
-        conf.send(msg.channel, `Are you sure you want to set role ${role.name} to mute role?`);
+        conf.send(msg.channel, `Are you sure you want to set role \`${role.name}\` to mute role?`);
     } else {
         const roles = await Roles.get({guild_id: msg.guild.id, role_type: ROLE_TYPES.MUTE_ROLE});
 
@@ -258,6 +307,9 @@ rolesUser.addChild(rolesUserRemove);
 rolesUser.addChild(rolesUserRequire);
 rolesUser.addChild(new AliasNode("req", rolesUserRequire));
 rolesUserRequire.addChild(rolesUserRequireAdd);
+rolesUserRequire.addChild(rolesUserRequireRemove);
+rolesUserRequire.addChild(new AliasNode("rm", rolesUserRequireRemove));
+rolesUserRequire.addChild(rolesUserRequireReset);
 rolesUser.addChild(new AliasNode("rm", rolesUserRemove));
 rolesUser.addChild(rolesUserReset);
 roles.addChild(roleMute);

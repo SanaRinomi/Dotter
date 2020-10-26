@@ -130,7 +130,7 @@ class UserRolesTable extends LinkingTable {
 class RolesRequireTable extends Table {
     constructor() {
         super("dot_role_require", table => {
-            table.string("role_target").references("dot_roles.id").primary();
+            table.string("role_target").references("dot_roles.id");
             table.string("role_required");
             table.string("role_name");
             table.integer("role_group").defaultTo(1);
