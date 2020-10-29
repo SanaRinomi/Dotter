@@ -117,7 +117,7 @@ const rolesUserRequire = new CommandNode("require", async (cli, command, msg) =>
 
         msg.channel.send(`\`\`\`md
 # ${target.name}'s Requirements
-${[...groups.entries()].map(v => {return `* Group ${v[0]}: ${v[1]}`;}).join("\n\n")}
+${[...groups.entries()].map(v => {return `* Group ${v[0]}: ${v[1]}`;}).join("\n")}
 \`\`\``);
     } else {
         msg.channel.send("This role requires nothing!");
