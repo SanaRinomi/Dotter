@@ -10,7 +10,7 @@ let FilteredMessages = new Map();
 
 const {GuildConfig} = require("../classes/Guild"),
     mustache = require("mustache"),
-    DLog = require("./discordLogger"),
+    DLog = require("./old_discordLogger"),
     Cache = require("./cache"),
     {Permissions: {FLAGS}} = require("discord.js"),
     {EVENTS, PRIORITIES} = require("./constants");
