@@ -55,24 +55,45 @@ class Cache {
     }
 }
 
+/**
+ * @callback tableCallback
+ * @param {object} table - Schema table object.
+ */
+
+/**
+ * Database table object.
+ */
 class DBTable {
+    /**
+     * 
+     * @param {string} tablename - Name of the table
+     * @param {tableCallback} table - Callback function used to create the table. 
+     * @param {boolean} [auto_create=true] - Check and create the table automatically.
+     */
     constructor(tablename, table = function(table){
         table.bigInteger("id").unsigned().primary();
-    }) {
+    }, auto_create = true) {
         this._name = tablename;
         this._table = table;
         this._generatedID = false;
         this._timestamp = null;
         this._cache = false;
         this._CacheObj = new Cache();
-        this.create();
+        if(auto_create) this.create();
     }
 
+    /**
+     * Create the DB table.
+     * @param {boolean} [check=true] - Check whether or not the table exists. 
+     */
     async create(check = true) {
         if(check && await pg.schema.hasTable(this._name)) return;
         await pg.schema.createTable(this._name, this._table);
     }
 
+    /**
+     * Deletes the table and recreates it.
+     */
     async remake() {
         if(await pg.schema.hasTable(this._name))
             await pg.schema.dropTable(this._name);
@@ -80,6 +101,11 @@ class DBTable {
         return true;
     }
 
+    /**
+     * Delete a row off the DB table.
+     * @param {*} id - ID of the row.
+     * @param {?string} [field=id] - Column to check the ID value againts.
+     */
     async del(id, field = null) {
         let res = await (Array.isArray(id) ? pg(this._name).whereIn(field ? field : "id", id).del() : pg(this._name).where(field ? field : typeof id === "object" ? id : {id}, field ? typeof id === "object" ? id : {id} : undefined).del());
         
@@ -88,6 +114,11 @@ class DBTable {
         else return false;
     }
 
+    /**
+     * Find out whether or not a row exists with value given in the desired column.
+     * @param {string} name - Name of the column.
+     * @param {*} value - Value to look for.
+     */
     async find(name, value) {
         let obj = {};
         obj[name] = value;
@@ -156,6 +187,102 @@ class DBTable {
         data = Array.isArray(data) ? data.map(v => clean(v)) : clean(data);        
 
         let res = await pg(this._name).returning(returning).insert(data);
+        
+        if(Array.isArray(res) && res.length)
+            return {success: true, data: res};
+        else return {success: false};
+    }
+}
+
+/** Class form managing settings */
+class SettingsTables extends DBTable{
+    /**
+     * Manage and create DB settings tables.
+     * @param {string} name - Settings table name.
+     * @param {string} constraint_name Constraints table name.
+     */
+    constructor(name = "settings", constraint_name = "allowed_setting_values") {
+        super(name, [table => {
+            table.increments("id");
+            table.string("name").notNullable();
+            table.string("description");
+            table.string("data_type").notNullable();
+            table.string("min_value");
+            table.string("max_value");
+            table.boolean("constrained").defaultTo(false);
+        }, table => {
+            table.increments("id");
+            table.integer("setting_id").unsigned().references(`${name}.id`);
+            table.string("value").notNullable();
+            table.string("name").notNullable();
+            table.string("description");
+        }], false);
+        this._constraintName = constraint_name;
+
+        this.create();
+    }
+
+    /**
+     * Create the DB tables.
+     * @param {boolean} check - Check if tables already exist.
+     */
+    async create(check = true) {
+        if(!check || await pg.schema.hasTable(this._name))
+            await pg.schema.createTable(this._name, this._table[0]);
+
+        if(!check || await pg.schema.hasTable(this._constraintName))
+            await pg.schema.createTable(this._constraintName, this._table[1]);
+    }
+
+    /**
+     * Get a constraint from the DB.
+     * @param {number} id - Constraint ID.
+     */
+    async getConstraint(id) {
+        let cache, cacheID = `${id}-constraint`;
+        
+        if(this._cache) cache = this._CacheObj.fetch(cacheID, data);
+        let res = cache ? cache : await pg.from(this._constraintName).select(data).where(typeof id === "object" ? id : {id});
+        
+        if(res.length && res[0]) {
+            if(this._cache && !cache) this._CacheObj.add(cacheID, res, data);
+            return {id: id, success: true, data: returnArray ? res : res[0]};
+        }
+        else return {id: id, success: false};
+    }
+
+    /**
+     * Get all constraints related to a setting.
+     * @param {number} id - Setting ID.
+     */
+    async getConstraints(id) {
+        let res = await pg.from(this._constraintName).select(data).where({setting_id: id});
+        
+        if(res.length && res[0])
+            return {id: id, success: true, data: res};
+        else return {id: id, success: false};
+    }
+
+    /**
+     * Insert constraint data into DB.
+     * @param {object} data - Data to insert.
+     * @param {string[]} [returning=["id"]] - Returning values from the insert.
+     */
+    async insertConstraint(data, returning = ["id"]) {
+        let clean = (dirtyData) => {
+            for (const key in data) {
+                if (dirtyData.hasOwnProperty(key)) {
+                    const element = dirtyData[key];
+                    if(typeof element === "object")
+                    dirtyData[key] = JSON.stringify(element);
+                }
+            }
+            return dirtyData;
+        };
+
+        data = Array.isArray(data) ? data.map(v => clean(v)) : clean(data);        
+
+        let res = await pg(this._constraintName).returning(returning).insert(data);
         
         if(Array.isArray(res) && res.length)
             return {success: true, data: res};
