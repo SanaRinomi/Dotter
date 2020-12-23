@@ -1,0 +1,9 @@
+{
+    "0": [
+        {
+            "name": "owner",
+            "description": "Owner ID of this bot",
+            "constraints": false
+        }
+    ]
+}

@@ -92,7 +92,7 @@ const rolesUserRemove = new CommandNode("remove", async (cli, command, msg) => {
     perms: [FLAGS.SEND_MESSAGES, FLAGS.ADD_REACTIONS, {type: FLAGS.ADMINISTRATOR, user: true}]
 });
 
-const rolesUserAdd = new Comma<ndNode("add", async (cli, command, msg) => {
+const rolesUserAdd = new CommandNode("add", async (cli, command, msg) => {
     userRoleManager(command, msg);
 }, {
     name: "Add user role",
